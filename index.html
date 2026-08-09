@@ -19,7 +19,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20260808-007";
+const VERSION = "20260809-012";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -98,13 +98,23 @@ input.hv {
 }
 input.hv:focus { outline:2px solid #ffd700; }
 
+.btn-hcp-row {
+  display:flex; gap:8px; margin-bottom:12px;
+}
 .btn-save {
-  width:100%; padding:11px; background:#1a3a6a; color:#87ceeb;
-  font-size:15px; font-weight:bold; border:none; border-radius:8px;
-  cursor:pointer; letter-spacing:.5px; touch-action:manipulation;
-  -webkit-user-select:none; user-select:none; margin-bottom:12px;
+  flex:1; padding:9px 8px; background:#1a3a6a; color:#87ceeb;
+  font-size:13px; font-weight:bold; border:none; border-radius:8px;
+  cursor:pointer; touch-action:manipulation;
+  -webkit-user-select:none; user-select:none;
 }
 .btn-save:active { background:#254d8a; }
+.btn-reset {
+  flex:1; padding:9px 8px; background:#3a1a1a; color:#f08080;
+  font-size:13px; font-weight:bold; border:none; border-radius:8px;
+  cursor:pointer; touch-action:manipulation;
+  -webkit-user-select:none; user-select:none;
+}
+.btn-reset:active { background:#5a2a2a; }
 #save-toast {
   display:none; text-align:center; color:#90ee90;
   font-size:13px; font-weight:bold; margin:-8px 0 10px;
@@ -216,7 +226,10 @@ td.fc-0 { color:#aaa !important; }
     </table>
   </div>
 
-  <button class="btn-save" onclick="saveCourse()">💾 &nbsp;Guardar Hcp de esta Cancha</button>
+  <div class="btn-hcp-row">
+    <button class="btn-save" onclick="saveCourse()">💾 Guardar Hcp</button>
+    <button class="btn-reset" onclick="resetCourse()">↩ Restablecer Hcp</button>
+  </div>
   <div id="save-toast">✅ Guardado</div>
   <button class="btn-start" onclick="startGame()">COMENZAR &nbsp;▶</button>
 </div>
@@ -356,7 +369,19 @@ function restoreState() {
   if (!saved || !saved.players || !saved.course) return false;
 
   players = saved.players;
-  course  = saved.course;
+
+  // Re-derivar course desde COURSES + HCPs guardados (evita usar datos viejos de saved.course)
+  const courseKey = (saved.courseName || '').replace(/\s*[—–-].*$/, '').trim();
+  if (courseKey && COURSES[courseKey]) {
+    const base = COURSES[courseKey];
+    const savedHcps = JSON.parse(localStorage.getItem('hcp_' + courseKey) || 'null');
+    course = base.map(([par], h) => {
+      const hcpH = (savedHcps && savedHcps[h] != null) ? savedHcps[h] : base[h][1];
+      return [par, hcpH];
+    });
+  } else {
+    course = saved.course; // fallback por si no se reconoce la cancha
+  }
 
   document.getElementById('sc-title').textContent = saved.courseName || '';
   buildScorecard();
@@ -375,6 +400,17 @@ function restoreState() {
   document.getElementById('setup').style.display = 'none';
   document.getElementById('scorecard').style.display = 'block';
   return true;
+}
+
+// ─── Restablecer HCPs de cancha (borra localStorage y recarga tabla) ──────
+function resetCourse() {
+  const name = document.getElementById('csel').value;
+  localStorage.removeItem('hcp_' + name);
+  populateHcpTable();
+  const toast = document.getElementById('save-toast');
+  toast.textContent = '↩ Restablecido';
+  toast.style.display = 'block';
+  setTimeout(() => { toast.style.display = 'none'; toast.textContent = '✅ Guardado'; }, 2000);
 }
 
 // ─── Guardar cancha (localStorage) ────────────────────────────────────────
@@ -422,18 +458,16 @@ function populateHcpTable() {
     sel.appendChild(o);
   });
 
-  // ── Cambio 6: valores por defecto + foco limpia el campo ──────────────────
-  const defaultIni = ['E', 'J', 'AB', ''];
+  // ── Cambio 6: campos vacíos sin placeholder → sin menú cortar en móvil ──
   const tbody = document.getElementById('prows');
   for (let i = 0; i < 4; i++) {
     const tr = document.createElement('tr');
     tr.innerHTML =
       `<td>Jugador ${i+1}</td>` +
       `<td><input class="ini" type="text" id="ini${i}" maxlength="7"
-         value="${defaultIni[i]}" autocorrect="off" autocapitalize="characters"
-         onfocus="this.select()"></td>` +
-      `<td><input class="hcp-in" type="number" id="hcp${i}" value="0" min="0" max="54"
-         inputmode="numeric" onfocus="this.select()"></td>`;
+         autocorrect="off" autocapitalize="characters"></td>` +
+      `<td><input class="hcp-in" type="number" id="hcp${i}" placeholder="0" min="0" max="54"
+         inputmode="numeric"></td>`;
     tbody.appendChild(tr);
   }
 
@@ -449,7 +483,8 @@ function startGame() {
   for (let i = 0; i < 4; i++) {
     const ini = document.getElementById(`ini${i}`).value.trim().toUpperCase();
     if (!ini) continue;
-    const hcp = parseInt(document.getElementById(`hcp${i}`).value);
+    const hcpRaw = document.getElementById(`hcp${i}`).value.trim();
+    const hcp = hcpRaw === '' ? 0 : parseInt(hcpRaw);
     if (isNaN(hcp)||hcp<0||hcp>54) { alert(`HCP inválido para jugador ${i+1}.`); return; }
     players.push({ ini, hcp });
   }
@@ -537,15 +572,14 @@ function buildScorecard() {
 }
 
 // ── Cambio 3: nueva paleta de colores ─────────────────────────────────────
-// pts: Stableford points  |  isPickup: levantó pelota  |  netOverPar: neto vs par (positivo = sobre par)
 function scoreColor(pts, isPickup, netOverPar) {
-  if (isPickup)   return ['#CC4400','#fff'];     // X / Mayor: naranja oscuro
-  if (pts >= 4)   return ['#1565C0','#fff'];     // Eagle o mejor: azul
-  if (pts === 3)  return ['#5BC8F5','#1a3a1a']; // Birdie: celeste
-  if (pts === 2)  return ['#4CAF50','#fff'];     // Par: verde
-  if (pts === 1)  return ['#FFD700','#1a3a1a']; // Bogey: amarillo
-  if (netOverPar === 2) return ['#FFA040','#1a3a1a']; // Doble Bogey exacto: naranja claro
-  return ['#CC4400','#fff'];  // Triple bogey o peor: naranja oscuro
+  if (isPickup)   return ['#CC4400','#fff'];
+  if (pts >= 4)   return ['#1565C0','#fff'];
+  if (pts === 3)  return ['#5BC8F5','#1a3a1a'];
+  if (pts === 2)  return ['#4CAF50','#fff'];
+  if (pts === 1)  return ['#FFD700','#1a3a1a'];
+  if (netOverPar === 2) return ['#FFA040','#1a3a1a'];
+  return ['#CC4400','#fff'];
 }
 
 function recalcAll() {
@@ -558,7 +592,6 @@ function recalcAll() {
       const el = document.getElementById(`g${j}_${h}`);
       const raw = el ? el.value.trim() : '';
 
-      // ── Cambio 2: detectar pickup (X) ─────────────────────────────────────
       const isPickup = (raw === 'X');
       const g = parseInt(raw);
       if (!isPickup && (raw===''||isNaN(g)||g<=0)) {
@@ -588,7 +621,6 @@ function recalcAll() {
     }
 
     const any = f9ok||b9ok;
-    // ── Cambio 2: mostrar X en totales si hubo pickup ──────────────────────
     set(`f9_${j}`,   !f9ok ? '—' : f9pickup ? 'X' : f9g);
     set(`b9_${j}`,   !b9ok ? '—' : b9pickup ? 'X' : b9g);
     set(`tot_${j}`,  !any  ? '—' : (f9pickup||b9pickup) ? 'X' : f9g+b9g);
@@ -599,7 +631,6 @@ function recalcAll() {
   if (players.length===4) recalcTeam();
   if (players.length===3) recalc420();
 
-  // ── Cambio 5: auto-guardar en cada cambio ─────────────────────────────────
   saveState();
 }
 
@@ -649,7 +680,6 @@ function buildTeamSection() {
     tbody.appendChild(tr);
   }
   for (let h=0; h<9; h++) addHoleRow(h);
-  // ── Cambio 4: Ida / Vuelta ─────────────────────────────────────────────────
   addTeamRow('Ida',    'ta_f9','tb_f9','r-sub');
   for (let h=9; h<18; h++) addHoleRow(h);
   addTeamRow('Vuelta', 'ta_b9','tb_b9','r-sub');
@@ -664,7 +694,6 @@ function calcHoleTeam(h) {
     const el = document.getElementById(`g${j}_${h}`);
     if (!el || el.value.trim() === '') return null;
     const raw = el.value.trim();
-    // ── Cambio 2: pickup (X) pierde el hoyo (net = Infinity) ──────────────
     const isPickup = (raw === 'X');
     const g = parseInt(raw);
     if (!isPickup && (isNaN(g) || g <= 0)) return null;
@@ -676,7 +705,6 @@ function calcHoleTeam(h) {
   const pts = [0, 0];
   if      (a1 < b1) pts[0] += 2;
   else if (b1 < a1) pts[1] += 2;
-  // Empate (incluyendo Infinity vs Infinity) → 0 pts, correcto
   if      (a2 < b2) pts[0] += 1;
   else if (b2 < a2) pts[1] += 1;
   return pts;
@@ -762,7 +790,6 @@ function build420Section() {
     tr.innerHTML = html; tbody.appendChild(tr);
   }
   for (let h=0; h<9; h++) addHole420(h);
-  // ── Cambio 4: Ida / Vuelta ─────────────────────────────────────────────────
   addRow420('Ida',    j=>`p4f9_${j}`, 'r-sub');
   for (let h=9; h<18; h++) addHole420(h);
   addRow420('Vuelta', j=>`p4b9_${j}`, 'r-sub');
@@ -776,7 +803,6 @@ function calcHole420(h) {
     const el = document.getElementById(`g${j}_${h}`);
     if (!el||el.value.trim()==='') return null;
     const raw = el.value.trim();
-    // ── Cambio 2: pickup = 3ro en 4-2-0 (net Infinity) ────────────────────
     const isPickup = (raw === 'X');
     const g = parseInt(raw);
     if (!isPickup && (isNaN(g)||g<=0)) return null;
@@ -789,7 +815,6 @@ function calcHole420(h) {
   const active = data.filter(d=>!d.pickup).sort((a,b)=>a.net-b.net);
 
   if (active.length === 3) {
-    // Nadie levantó → lógica original
     const n0=active[0].net, n1=active[1].net, n2=active[2].net;
     if (n0===n1 && n1===n2) {
       // Triple empate → 0 c/u
@@ -807,7 +832,6 @@ function calcHole420(h) {
   } else if (active.length === 1) {
     pts[active[0].j] = 4;
   }
-  // Los que levantaron quedan con 0 (ya inicializado)
   return pts;
 }
 
