@@ -7,7 +7,10 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>S.U.A.S.A.</title>
-<link rel="manifest" id="manifest-link">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon.svg">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SUASA">
@@ -18,7 +21,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20260809-014";
+const VERSION = "20260809-015";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -38,40 +41,6 @@ const VERSION = "20260809-014";
   document.addEventListener('DOMContentLoaded', function() {
     document.title = 'S.U.A.S.A.';
     document.getElementById('main-title').textContent = 'S.U.A.S.A.';
-
-    // ── Generar ícono en canvas ──────────────────────────────────────────────
-    function makeIcon(size, radius, fontSize, emojiY) {
-      const c = document.createElement('canvas');
-      c.width = size; c.height = size;
-      const x = c.getContext('2d');
-      x.fillStyle = '#1a472a';
-      x.beginPath(); x.roundRect(0,0,size,size,radius); x.fill();
-      x.font = fontSize + 'px serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
-      x.fillText('⛳', size/2, emojiY);
-      return c.toDataURL('image/png');
-    }
-    const icon192 = makeIcon(192, 32,  120, 100);
-    const icon512 = makeIcon(512, 80,  320, 270);
-
-    // Apple touch icon y favicon
-    const lnk = document.createElement('link'); lnk.rel = 'apple-touch-icon'; lnk.href = icon192; document.head.appendChild(lnk);
-    const fav = document.createElement('link'); fav.rel = 'icon'; fav.href = icon192; document.head.appendChild(fav);
-
-    // ── Manifest dinámico (blob) con íconos embebidos ────────────────────────
-    const manifest = {
-      name: 'S.U.A.S.A.',
-      short_name: 'SUASA',
-      start_url: location.origin + location.pathname,
-      display: 'standalone',
-      background_color: '#1a472a',
-      theme_color: '#1a472a',
-      icons: [
-        { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
-        { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
-      ]
-    };
-    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-    document.getElementById('manifest-link').href = URL.createObjectURL(blob);
   });
 </script>
 <style>
