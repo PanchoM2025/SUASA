@@ -18,7 +18,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20260809-013";
+const VERSION = "20260809-014";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -61,7 +61,7 @@ const VERSION = "20260809-013";
     const manifest = {
       name: 'S.U.A.S.A.',
       short_name: 'SUASA',
-      start_url: location.pathname,
+      start_url: location.origin + location.pathname,
       display: 'standalone',
       background_color: '#1a472a',
       theme_color: '#1a472a',
