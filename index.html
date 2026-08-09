@@ -7,11 +7,10 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>S.U.A.S.A.</title>
-<link rel="manifest" href="/manifest.json">
+<link rel="manifest" id="manifest-link">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SUASA">
-<link rel="apple-touch-icon" href="/icon-192.png">
 <script>
 // ── Service Worker (PWA sin badge de Chrome) ────────────────────────────────
 if ('serviceWorker' in navigator) {
@@ -19,7 +18,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20260809-012";
+const VERSION = "20260809-013";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -39,15 +38,40 @@ const VERSION = "20260809-012";
   document.addEventListener('DOMContentLoaded', function() {
     document.title = 'S.U.A.S.A.';
     document.getElementById('main-title').textContent = 'S.U.A.S.A.';
-    const canvas = document.createElement('canvas');
-    canvas.width = 192; canvas.height = 192;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#1a472a';
-    ctx.beginPath(); ctx.roundRect(0,0,192,192,32); ctx.fill();
-    ctx.font = '120px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('⛳', 96, 100);
-    const lnk = document.createElement('link'); lnk.rel = 'apple-touch-icon'; lnk.href = canvas.toDataURL('image/png'); document.head.appendChild(lnk);
-    const fav = document.createElement('link'); fav.rel = 'icon'; fav.href = canvas.toDataURL('image/png'); document.head.appendChild(fav);
+
+    // ── Generar ícono en canvas ──────────────────────────────────────────────
+    function makeIcon(size, radius, fontSize, emojiY) {
+      const c = document.createElement('canvas');
+      c.width = size; c.height = size;
+      const x = c.getContext('2d');
+      x.fillStyle = '#1a472a';
+      x.beginPath(); x.roundRect(0,0,size,size,radius); x.fill();
+      x.font = fontSize + 'px serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.fillText('⛳', size/2, emojiY);
+      return c.toDataURL('image/png');
+    }
+    const icon192 = makeIcon(192, 32,  120, 100);
+    const icon512 = makeIcon(512, 80,  320, 270);
+
+    // Apple touch icon y favicon
+    const lnk = document.createElement('link'); lnk.rel = 'apple-touch-icon'; lnk.href = icon192; document.head.appendChild(lnk);
+    const fav = document.createElement('link'); fav.rel = 'icon'; fav.href = icon192; document.head.appendChild(fav);
+
+    // ── Manifest dinámico (blob) con íconos embebidos ────────────────────────
+    const manifest = {
+      name: 'S.U.A.S.A.',
+      short_name: 'SUASA',
+      start_url: location.pathname,
+      display: 'standalone',
+      background_color: '#1a472a',
+      theme_color: '#1a472a',
+      icons: [
+        { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+        { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+      ]
+    };
+    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+    document.getElementById('manifest-link').href = URL.createObjectURL(blob);
   });
 </script>
 <style>
@@ -270,7 +294,7 @@ td.fc-0 { color:#aaa !important; }
 const COURSES = {
   "CNSI": [
     [4, 3],[3,15],[4,17],[4, 9],[4, 5],[5, 1],[4, 7],[3,13],[4,11],
-    [4,14],[4, 6],[5,10],[4,12],[3,2],[5, 8],[4, 4],[3,18],[4,16]
+    [4,14],[4, 6],[5, 10,[4,12],[3,2],[5, 8],[4, 4],[3,18],[4,16]
   ],
   "Pilará": [
     [5, 3],[3,13],[4, 5],[4,11],[4,15],[4, 9],[5, 1],[3,17],[4, 7],
@@ -310,7 +334,7 @@ const COURSES = {
   ],
   "Pingüinos": [
     [4, 7],[5, 3],[3,17],[4,11],[4, 5],[3,15],[4, 9],[5, 1],[4,13],
-    [4,10],[5, 4],[3,18],[4,14],[3,16],[4,8],[5, 2],[3,12],[5,6]
+    [4,10],[5, 4],[3,18],[4, 14],[3,16],[4,8],[5, 2],[3,12],[5, 6]
   ],
   "Golfers Country Club": [
     [4, 5],[4, 3],[4,13],[5,17],[3,15],[4, 7],[3, 9],[4,11],[5, 1],
@@ -321,7 +345,6 @@ const COURSES = {
     [4, 6],[3,10],[4, 8],[3,18],[4, 4],[5, 2],[4,16],[4,12],[3,14]
   ],
 };
-
 // ─── Fórmulas ──────────────────────────────────────────────────────────────
 function strokes(hcp, hcpH) {
   return Math.floor(hcp/18) + (hcp%18 >= hcpH ? 1 : 0);
@@ -572,14 +595,15 @@ function buildScorecard() {
 }
 
 // ── Cambio 3: nueva paleta de colores ─────────────────────────────────────
+// pts: Stableford points  |  isPickup: levantó pelota  |  netOverPar: neto vs par (positivo = sobre par)
 function scoreColor(pts, isPickup, netOverPar) {
-  if (isPickup)   return ['#CC4400','#fff'];
-  if (pts >= 4)   return ['#1565C0','#fff'];
-  if (pts === 3)  return ['#5BC8F5','#1a3a1a'];
-  if (pts === 2)  return ['#4CAF50','#fff'];
-  if (pts === 1)  return ['#FFD700','#1a3a1a'];
-  if (netOverPar === 2) return ['#FFA040','#1a3a1a'];
-  return ['#CC4400','#fff'];
+  if (isPickup)   return ['#CC4400','#fff'];     // X / Mayor: naranja oscuro
+  if (pts >= 4)   return ['#1565C0','#fff'];     // Eagle o mejor: azul
+  if (pts === 3)  return ['#5BC8F5','#1a3a1a']; // Birdie: celeste
+  if (pts === 2)  return ['#4CAF50','#fff'];     // Par: verde
+  if (pts === 1)  return ['#FFD700','#1a3a1a']; // Bogey: amarillo
+  if (netOverPar === 2) return ['#FFA040','#1a3a1a']; // Doble Bogey exacto: naranja claro
+  return ['#CC4400','#fff'];  // Triple bogey o peor: naranja oscuro
 }
 
 function recalcAll() {
@@ -592,6 +616,7 @@ function recalcAll() {
       const el = document.getElementById(`g${j}_${h}`);
       const raw = el ? el.value.trim() : '';
 
+      // ── Cambio 2: detectar pickup (X) ─────────────────────────────────────
       const isPickup = (raw === 'X');
       const g = parseInt(raw);
       if (!isPickup && (raw===''||isNaN(g)||g<=0)) {
@@ -621,6 +646,7 @@ function recalcAll() {
     }
 
     const any = f9ok||b9ok;
+    // ── Cambio 2: mostrar X en totales si hubo pickup ──────────────────────
     set(`f9_${j}`,   !f9ok ? '—' : f9pickup ? 'X' : f9g);
     set(`b9_${j}`,   !b9ok ? '—' : b9pickup ? 'X' : b9g);
     set(`tot_${j}`,  !any  ? '—' : (f9pickup||b9pickup) ? 'X' : f9g+b9g);
@@ -631,6 +657,7 @@ function recalcAll() {
   if (players.length===4) recalcTeam();
   if (players.length===3) recalc420();
 
+  // ── Cambio 5: auto-guardar en cada cambio ─────────────────────────────────
   saveState();
 }
 
@@ -680,6 +707,7 @@ function buildTeamSection() {
     tbody.appendChild(tr);
   }
   for (let h=0; h<9; h++) addHoleRow(h);
+  // ── Cambio 4: Ida / Vuelta ─────────────────────────────────────────────────
   addTeamRow('Ida',    'ta_f9','tb_f9','r-sub');
   for (let h=9; h<18; h++) addHoleRow(h);
   addTeamRow('Vuelta', 'ta_b9','tb_b9','r-sub');
@@ -694,6 +722,7 @@ function calcHoleTeam(h) {
     const el = document.getElementById(`g${j}_${h}`);
     if (!el || el.value.trim() === '') return null;
     const raw = el.value.trim();
+    // ── Cambio 2: pickup (X) pierde el hoyo (net = Infinity) ──────────────
     const isPickup = (raw === 'X');
     const g = parseInt(raw);
     if (!isPickup && (isNaN(g) || g <= 0)) return null;
@@ -705,6 +734,7 @@ function calcHoleTeam(h) {
   const pts = [0, 0];
   if      (a1 < b1) pts[0] += 2;
   else if (b1 < a1) pts[1] += 2;
+  // Empate (incluyendo Infinity vs Infinity) → 0 pts, correcto
   if      (a2 < b2) pts[0] += 1;
   else if (b2 < a2) pts[1] += 1;
   return pts;
@@ -790,6 +820,7 @@ function build420Section() {
     tr.innerHTML = html; tbody.appendChild(tr);
   }
   for (let h=0; h<9; h++) addHole420(h);
+  // ── Cambio 4: Ida / Vuelta ─────────────────────────────────────────────────
   addRow420('Ida',    j=>`p4f9_${j}`, 'r-sub');
   for (let h=9; h<18; h++) addHole420(h);
   addRow420('Vuelta', j=>`p4b9_${j}`, 'r-sub');
@@ -803,6 +834,7 @@ function calcHole420(h) {
     const el = document.getElementById(`g${j}_${h}`);
     if (!el||el.value.trim()==='') return null;
     const raw = el.value.trim();
+    // ── Cambio 2: pickup = 3ro en 4-2-0 (net Infinity) ────────────────────
     const isPickup = (raw === 'X');
     const g = parseInt(raw);
     if (!isPickup && (isNaN(g)||g<=0)) return null;
@@ -815,6 +847,7 @@ function calcHole420(h) {
   const active = data.filter(d=>!d.pickup).sort((a,b)=>a.net-b.net);
 
   if (active.length === 3) {
+    // Nadie levantó → lógica original
     const n0=active[0].net, n1=active[1].net, n2=active[2].net;
     if (n0===n1 && n1===n2) {
       // Triple empate → 0 c/u
@@ -832,6 +865,7 @@ function calcHole420(h) {
   } else if (active.length === 1) {
     pts[active[0].j] = 4;
   }
+  // Los que levantaron quedan con 0 (ya inicializado)
   return pts;
 }
 
