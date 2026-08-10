@@ -21,7 +21,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20260809-015";
+const VERSION = "20260809-016";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -124,10 +124,10 @@ input.hv:focus { outline:2px solid #ffd700; }
 #scorecard { display:none; padding:14px 10px 30px; }
 #sc-title { font-size:15px; color:#ffd700; text-align:center; margin-bottom:12px; letter-spacing:.5px; }
 .sc-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
-table.sc { border-collapse:collapse; min-width:100%; font-size:13px; table-layout:fixed; }
-table.sc th { background:#0d3318; color:#a8d8a8; padding:6px 2px; text-align:center; font-size:11px; white-space:nowrap; }
+table.sc { border-collapse:collapse; min-width:100%; font-size:15px; table-layout:fixed; }
+table.sc th { background:#0d3318; color:#a8d8a8; padding:6px 2px; text-align:center; font-size:13px; white-space:nowrap; }
 table.sc td { padding:4px 2px; text-align:center; white-space:nowrap; }
-table.sc th.c-fix, table.sc td.c-fix { width:26px; max-width:26px; font-size:11px; }
+table.sc th.c-fix, table.sc td.c-fix { width:26px; max-width:26px; font-size:13px; }
 table.sc th.c-player, table.sc td.c-player { width:50px; }
 table.sc th.c-team,   table.sc td.c-team   { width:72px; }
 table.sc th.c-p420,   table.sc td.c-p420   { width:62px; }
@@ -136,15 +136,15 @@ table.sc td.lbl { text-align:left; padding-left:10px; font-weight:bold; }
 tr.r-even  td { background:#245c38; }
 tr.r-odd   td { background:#1a472a; }
 tr.r-sub   td { background:#0a2a14; color:#ffd700; font-weight:bold; }
-tr.r-total td { background:#0d3318; color:#ffd700; font-weight:bold; font-size:14px; border-top:2px solid #3d8a3d; }
-tr.r-stbl  td { background:#072b18; color:#90ee90; font-weight:bold; font-size:13px; }
-tr.r-aag   td { background:#072b18; color:#87ceeb; font-weight:bold; font-size:13px; }
-tr.r-diff  td { background:#051a0e; color:#ffd700; font-weight:bold; font-size:14px; border-top:2px solid #ffd700; }
+tr.r-total td { background:#0d3318; color:#ffd700; font-weight:bold; font-size:16px; border-top:2px solid #3d8a3d; }
+tr.r-stbl  td { background:#072b18; color:#90ee90; font-weight:bold; font-size:15px; }
+tr.r-aag   td { background:#072b18; color:#87ceeb; font-weight:bold; font-size:15px; }
+tr.r-diff  td { background:#051a0e; color:#ffd700; font-weight:bold; font-size:16px; border-top:2px solid #ffd700; }
 
 /* score input */
 input.g {
   width:44px; text-align:center; background:#e8f5e9; color:#1a3a1a;
-  border:none; border-radius:3px; padding:5px 0; font-size:16px; font-weight:bold;
+  border:none; border-radius:3px; padding:5px 0; font-size:18px; font-weight:bold;
   -webkit-appearance:none; appearance:none; touch-action:manipulation; transition:background .2s;
 }
 input.g:focus { outline:2px solid #ffd700; }
@@ -153,16 +153,16 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance:none; margi
 input[type="number"] { -moz-appearance:textfield; }
 
 /* ── COLORES EQUIPO (A la 1° y 2° mejores) ── */
-td.tc-3 { background:#b85c00 !important; color:#fff    !important; font-weight:bold; font-size:15px; }
-td.tc-2 { background:#8a7200 !important; color:#ffd700 !important; font-weight:bold; font-size:15px; }
-td.tc-1 { background:#1e5c2e !important; color:#90ee90 !important; font-weight:bold; font-size:15px; }
+td.tc-3 { background:#b85c00 !important; color:#fff    !important; font-weight:bold; font-size:17px; }
+td.tc-2 { background:#8a7200 !important; color:#ffd700 !important; font-weight:bold; font-size:17px; }
+td.tc-1 { background:#1e5c2e !important; color:#90ee90 !important; font-weight:bold; font-size:17px; }
 td.tc-0 { color:#aaa !important; }
 
 /* ── COLORES 4-2-0 ── */
-td.fc-4 { background:#7a5f00 !important; color:#ffd700 !important; font-weight:bold; font-size:15px; }
-td.fc-3 { background:#5a4600 !important; color:#c8a500 !important; font-weight:bold; font-size:14px; }
-td.fc-2 { background:#1a5c30 !important; color:#90ee90 !important; font-weight:bold; font-size:15px; }
-td.fc-1 { background:#143d22 !important; color:#c8e6c9 !important; font-weight:bold; font-size:14px; }
+td.fc-4 { background:#7a5f00 !important; color:#ffd700 !important; font-weight:bold; font-size:17px; }
+td.fc-3 { background:#5a4600 !important; color:#c8a500 !important; font-weight:bold; font-size:16px; }
+td.fc-2 { background:#1a5c30 !important; color:#90ee90 !important; font-weight:bold; font-size:17px; }
+td.fc-1 { background:#143d22 !important; color:#c8e6c9 !important; font-weight:bold; font-size:16px; }
 td.fc-0 { color:#aaa !important; }
 
 /* separador de secciones */
