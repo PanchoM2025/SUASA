@@ -21,7 +21,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20260809-016";
+const VERSION = "20260809-017";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -125,9 +125,9 @@ input.hv:focus { outline:2px solid #ffd700; }
 #sc-title { font-size:15px; color:#ffd700; text-align:center; margin-bottom:12px; letter-spacing:.5px; }
 .sc-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
 table.sc { border-collapse:collapse; min-width:100%; font-size:15px; table-layout:fixed; }
-table.sc th { background:#0d3318; color:#a8d8a8; padding:6px 2px; text-align:center; font-size:13px; white-space:nowrap; }
+table.sc th { background:#0d3318; color:#a8d8a8; padding:6px 2px; text-align:center; font-size:16px; white-space:nowrap; }
 table.sc td { padding:4px 2px; text-align:center; white-space:nowrap; }
-table.sc th.c-fix, table.sc td.c-fix { width:26px; max-width:26px; font-size:13px; }
+table.sc th.c-fix, table.sc td.c-fix { width:26px; max-width:26px; font-size:16px; }
 table.sc th.c-player, table.sc td.c-player { width:50px; }
 table.sc th.c-team,   table.sc td.c-team   { width:72px; }
 table.sc th.c-p420,   table.sc td.c-p420   { width:62px; }
