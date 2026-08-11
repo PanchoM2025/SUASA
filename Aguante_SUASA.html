@@ -114,11 +114,62 @@ input.hv:focus { outline:2px solid #ffd700; }
 }
 
 .btn-start {
-  width:100%; padding:16px; background:#2d6a2d; color:#ffd700;
+  padding:16px 22px; background:#2d6a2d; color:#ffd700;
   font-size:18px; font-weight:bold; border:none; border-radius:8px;
-  cursor:pointer; letter-spacing:1px; touch-action:manipulation; -webkit-user-select:none; user-select:none;
+  cursor:pointer; letter-spacing:1px; touch-action:manipulation;
+  -webkit-user-select:none; user-select:none; white-space:nowrap;
 }
 .btn-start:active { background:#3d8a3d; }
+
+/* ── FILA INFERIOR: INSTRUCCIONES + COMENZAR ── */
+.btn-bottom-row {
+  display:flex; gap:8px; align-items:stretch;
+}
+.btn-instrucciones {
+  flex:1; padding:9px 8px; background:#1a3a5a; color:#87ceeb;
+  font-size:13px; font-weight:bold; border:none; border-radius:8px;
+  cursor:pointer; touch-action:manipulation;
+  -webkit-user-select:none; user-select:none;
+}
+.btn-instrucciones:active { background:#254d7a; }
+
+/* ── MODAL INSTRUCCIONES ── */
+#modal-instrucciones {
+  display:none; position:fixed; inset:0; z-index:1000;
+  background:rgba(0,0,0,0.80); justify-content:center; align-items:center;
+  padding:16px;
+}
+#modal-instrucciones.open { display:flex; }
+.modal-box {
+  background:#0d3318; border:1px solid #3d8a3d; border-radius:12px;
+  padding:24px 20px; max-width:420px; width:100%; max-height:88vh;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+}
+.modal-box h2 {
+  color:#ffd700; font-size:17px; text-align:center;
+  margin-bottom:16px; letter-spacing:.5px;
+}
+.modal-box p {
+  color:#d8f0d8; font-size:14px; line-height:1.65; margin-bottom:10px;
+}
+.modal-box .m-bullet {
+  color:#d8f0d8; font-size:14px; line-height:1.65;
+  margin:0 0 6px 8px; display:flex; gap:6px;
+}
+.modal-box .m-bullet span { flex-shrink:0; }
+.modal-box .m-mod {
+  color:#ffd700; font-size:13px; font-weight:bold;
+  margin:10px 0 3px; padding-left:4px;
+}
+.modal-box .m-mod-desc {
+  color:#a8d8a8; font-size:13px; line-height:1.6; margin-bottom:4px; padding-left:8px;
+}
+.modal-close {
+  display:block; margin:18px auto 0; padding:10px 32px;
+  background:#2d6a2d; color:#fff; font-size:15px; font-weight:bold;
+  border:none; border-radius:8px; cursor:pointer; touch-action:manipulation;
+}
+.modal-close:active { background:#3d8a3d; }
 
 /* ── SCORECARD ── */
 #scorecard { display:none; padding:14px 10px 30px; }
@@ -214,7 +265,29 @@ td.mc-lose { color:#555 !important; }
     <button class="btn-reset" onclick="resetCourse()">&#x21A9; Restablecer Hcp</button>
   </div>
   <div id="save-toast">&#x2705; Guardado</div>
-  <button class="btn-start" onclick="startGame()">COMENZAR &nbsp;&#9658;</button>
+  <div class="btn-bottom-row">
+    <button class="btn-instrucciones" onclick="openInstructions()">&#x1F4CB; Instrucciones</button>
+    <button class="btn-start" onclick="startGame()">COMENZAR &nbsp;&#9658;</button>
+  </div>
+</div>
+
+<!-- ── MODAL INSTRUCCIONES ── -->
+<div id="modal-instrucciones" onclick="if(event.target===this)closeInstructions()">
+  <div class="modal-box">
+    <h2>&#x1F4CB; Instrucciones</h2>
+    <p>En esta 1&#xB0; pantalla usted puede:</p>
+    <div class="m-bullet"><span>•</span><span>Seleccionar la cancha que va a jugar (si no est&#xE1; en el listado, la puede crear).</span></div>
+    <div class="m-bullet"><span>•</span><span>Cuatro filas para ingresar las iniciales y el Handicap de juego de cada jugador.</span></div>
+    <div class="m-bullet"><span>•</span><span>Una tabla con los handicaps de c/hoyo de la cancha seleccionada. Los que pueden modificarse y guardar antes de continuar.</span></div>
+    <p style="margin-top:10px">Seg&#xFA;n la cantidad de jugadores ingresados, la siguiente pantalla aparte de ingresar los scores, muestra el score individual, el del Stableford (HCP 100%), y el de la AAG (Double Bogey Neto), ofrece jugar estas distintas modalidades:</p>
+    <div class="m-mod">&#x1F3C6; Con 4 jugadores:</div>
+    <div class="m-mod-desc">Modalidad la &#x201C;1&#xB0; y 2&#xB0; mejores pelotas&#x201D; (HCP 85%) valiendo 2 ptos la 1&#xB0; mejor y 1 pto la 2&#xB0; mejor.</div>
+    <div class="m-mod">&#x26A1; Con 3 jugadores:</div>
+    <div class="m-mod-desc">Modalidad &#x201C;4-2-0&#x201D; (4 puntos para la mejor pelota del hoyo, 2 para la segunda).</div>
+    <div class="m-mod">&#x1F94A; Con 2 jugadores:</div>
+    <div class="m-mod-desc">Modalidad Match (1 punto por cada hoyo ganado).</div>
+    <button class="modal-close" onclick="closeInstructions()">Cerrar</button>
+  </div>
 </div>
 
 <!-- ── SCORECARD ── -->
@@ -864,6 +937,14 @@ function calcHole420(h) {
     pts[active[0].j]=4;
   }
   return pts;
+}
+
+// ════ INSTRUCCIONES ════
+function openInstructions() {
+  document.getElementById('modal-instrucciones').classList.add('open');
+}
+function closeInstructions() {
+  document.getElementById('modal-instrucciones').classList.remove('open');
 }
 
 function recalc420() {
