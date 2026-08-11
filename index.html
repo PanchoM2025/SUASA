@@ -21,7 +21,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20260809-017";
+const VERSION = "20260811-003";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -67,7 +67,7 @@ select {
 input.ini { width:80px; text-transform:uppercase; }
 input.hcp-in { width:70px; }
 
-/* ── VERIFICACIÓN HCP HOYOS ── */
+/* ── VERIFICACION HCP HOYOS ── */
 .hcp-verify-label {
   color:#ffd700; font-size:14px; font-weight:bold;
   text-align:center; margin:4px 0 10px; letter-spacing:.5px;
@@ -131,6 +131,7 @@ table.sc th.c-fix, table.sc td.c-fix { width:26px; max-width:26px; font-size:16p
 table.sc th.c-player, table.sc td.c-player { width:50px; }
 table.sc th.c-team,   table.sc td.c-team   { width:72px; }
 table.sc th.c-p420,   table.sc td.c-p420   { width:62px; }
+table.sc th.c-match,  table.sc td.c-match  { width:80px; }
 table.sc td.lbl { text-align:left; padding-left:10px; font-weight:bold; }
 
 tr.r-even  td { background:#245c38; }
@@ -152,7 +153,7 @@ input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
 input[type="number"] { -moz-appearance:textfield; }
 
-/* ── COLORES EQUIPO (A la 1° y 2° mejores) ── */
+/* ── COLORES EQUIPO ── */
 td.tc-3 { background:#b85c00 !important; color:#fff    !important; font-weight:bold; font-size:17px; }
 td.tc-2 { background:#8a7200 !important; color:#ffd700 !important; font-weight:bold; font-size:17px; }
 td.tc-1 { background:#1e5c2e !important; color:#90ee90 !important; font-weight:bold; font-size:17px; }
@@ -165,21 +166,15 @@ td.fc-2 { background:#1a5c30 !important; color:#90ee90 !important; font-weight:b
 td.fc-1 { background:#143d22 !important; color:#c8e6c9 !important; font-weight:bold; font-size:16px; }
 td.fc-0 { color:#aaa !important; }
 
-/* separador de secciones */
-.sec-sep {
-  margin-top:24px; padding-top:16px;
-  border-top:2px solid #3d8a3d;
-}
-.sec-title {
-  font-size:15px; font-weight:bold; text-align:center;
-  margin-bottom:4px; letter-spacing:1px;
-}
-.sec-sub {
-  font-size:11px; color:#a8d8a8; text-align:center; margin-bottom:10px;
-}
-.sec-legend {
-  font-size:10px; color:#666; text-align:center; margin-top:6px;
-}
+/* ── COLORES MATCH ── */
+td.mc-win  { background:#1a5c30 !important; color:#90ee90 !important; font-weight:bold; font-size:17px; }
+td.mc-tie  { background:#2a2a0a !important; color:#c8c870 !important; font-weight:bold; font-size:15px; }
+td.mc-lose { color:#555 !important; }
+
+.sec-sep { margin-top:24px; padding-top:16px; border-top:2px solid #3d8a3d; }
+.sec-title { font-size:15px; font-weight:bold; text-align:center; margin-bottom:4px; letter-spacing:1px; }
+.sec-sub { font-size:11px; color:#a8d8a8; text-align:center; margin-bottom:10px; }
+.sec-legend { font-size:10px; color:#666; text-align:center; margin-top:6px; }
 
 .btn-new {
   display:block; margin:18px auto 0; padding:12px 32px;
@@ -204,27 +199,22 @@ td.fc-0 { color:#aaa !important; }
     <tbody id="prows"></tbody>
   </table>
 
-  <!-- Verificación HCP hoyos -->
   <p class="hcp-verify-label">Verifique los Hcp de los Hoyos</p>
   <div class="hcp-verify-wrap">
     <table class="hcp-vtbl">
       <thead>
-        <tr>
-          <th>Hoyo</th><th>Hcp</th>
-          <th class="sep"></th>
-          <th>Hoyo</th><th>Hcp</th>
-        </tr>
+        <tr><th>Hoyo</th><th>Hcp</th><th class="sep"></th><th>Hoyo</th><th>Hcp</th></tr>
       </thead>
       <tbody id="hcp-rows"></tbody>
     </table>
   </div>
 
   <div class="btn-hcp-row">
-    <button class="btn-save" onclick="saveCourse()">💾 Guardar Hcp</button>
-    <button class="btn-reset" onclick="resetCourse()">↩ Restablecer Hcp</button>
+    <button class="btn-save" onclick="saveCourse()">&#x1F4BE; Guardar Hcp</button>
+    <button class="btn-reset" onclick="resetCourse()">&#x21A9; Restablecer Hcp</button>
   </div>
-  <div id="save-toast">✅ Guardado</div>
-  <button class="btn-start" onclick="startGame()">COMENZAR &nbsp;▶</button>
+  <div id="save-toast">&#x2705; Guardado</div>
+  <button class="btn-start" onclick="startGame()">COMENZAR &nbsp;&#9658;</button>
 </div>
 
 <!-- ── SCORECARD ── -->
@@ -234,38 +224,47 @@ td.fc-0 { color:#aaa !important; }
     <table class="sc" id="sc-tbl"></table>
   </div>
 
-  <!-- A LA 1° Y 2° MEJORES  (4 jugadores) -->
+  <!-- A LA 1° Y 2° MEJORES (4 jugadores) -->
   <div id="team-section" style="display:none" class="sec-sep">
-    <p class="sec-title" style="color:#ffd700">🏆 A LA 1° Y 2° MEJORES</p>
+    <p class="sec-title" style="color:#ffd700">&#x1F3C6; A LA 1&#xBA; Y 2&#xBA; MEJORES</p>
     <p class="sec-sub" id="team-sub"></p>
     <div class="sc-wrap">
       <table class="sc" id="team-tbl"></table>
     </div>
-    <p class="sec-legend">1° neto único = 2 pts &nbsp;·&nbsp; 2° neto único = 1 pt &nbsp;·&nbsp; Empate = 0 pts &nbsp;|&nbsp; HCP 85%</p>
-    <p class="sec-legend" style="margin-top:4px">· Los puntos se calculan hoyo por hoyo cuando los 4 jugadores tienen score ·</p>
+    <p class="sec-legend">1&#xBA; neto unico = 2 pts &nbsp;&middot;&nbsp; 2&#xBA; neto unico = 1 pt &nbsp;&middot;&nbsp; Empate = 0 pts &nbsp;|&nbsp; HCP 85%</p>
+    <p class="sec-legend" style="margin-top:4px">&middot; Los puntos se calculan hoyo por hoyo cuando los 4 jugadores tienen score &middot;</p>
   </div>
 
-  <!-- 4 - 2 - 0  (3 jugadores) -->
+  <!-- MATCH (2 jugadores) -->
+  <div id="section-match" style="display:none" class="sec-sep">
+    <p class="sec-title" style="color:#90ee90">&#x1F94A; MATCH</p>
+    <p class="sec-sub" id="sub-match"></p>
+    <div class="sc-wrap">
+      <table class="sc" id="tbl-match"></table>
+    </div>
+    <p class="sec-legend">Menor neto gana el hoyo = 1 pt &nbsp;&middot;&nbsp; Empate = 0 pts &nbsp;|&nbsp; HCP 85%</p>
+  </div>
+
+  <!-- 4 - 2 - 0 (3 jugadores) -->
   <div id="section420" style="display:none" class="sec-sep">
-    <p class="sec-title" style="color:#87ceeb">⚡ 4 — 2 — 0</p>
+    <p class="sec-title" style="color:#87ceeb">&#x26A1; 4 &mdash; 2 &mdash; 0</p>
     <p class="sec-sub" id="sub420"></p>
     <div class="sc-wrap">
       <table class="sc" id="tbl420"></table>
     </div>
-    <p class="sec-legend">1° = 4 pts · 2° = 2 pts · 3° = 0 &nbsp;|&nbsp; Empate 1°/2° → reparten (3 c/u) &nbsp;|&nbsp; HCP 85%</p>
+    <p class="sec-legend">1&#xBA; = 4 pts &middot; 2&#xBA; = 2 pts &middot; 3&#xBA; = 0 &nbsp;|&nbsp; Empate 1&#xBA;/2&#xBA; &rarr; reparten (3 c/u) &nbsp;|&nbsp; HCP 85%</p>
   </div>
 
-  <button class="btn-new" onclick="newGame()">↩ &nbsp;Nueva Partida</button>
+  <button class="btn-new" onclick="newGame()">&#x21A9; &nbsp;Nueva Partida</button>
 </div>
 
 <script>
-// ─── Canchas ───────────────────────────────────────────────────────────────
 const COURSES = {
   "CNSI": [
     [4, 3],[3,15],[4,17],[4, 9],[4, 5],[5, 1],[4, 7],[3,13],[4,11],
     [4,14],[4, 6],[5,10],[4,12],[3,2],[5, 8],[4, 4],[3,18],[4,16]
   ],
-  "Pilará": [
+  "Pilara": [
     [5, 3],[3,13],[4, 5],[4,11],[4,15],[4, 9],[5, 1],[3,17],[4, 7],
     [4,12],[3,18],[4, 6],[3,14],[5, 2],[4,16],[4,10],[4, 8],[5, 4]
   ],
@@ -297,11 +296,11 @@ const COURSES = {
     [4, 5],[4,11],[3,17],[5, 9],[4,13],[4, 7],[4, 1],[3,15],[4, 3],
     [5, 4],[5,12],[3,18],[4, 2],[4, 6],[5,10],[4, 8],[3,16],[4,14]
   ],
-  "CUBA Fátima": [
+  "CUBA Fatima": [
     [5, 5],[3,15],[4, 1],[5,11],[4, 9],[4, 7],[3,17],[4, 3],[4,13],
     [4,12],[5, 6],[4, 4],[4, 8],[3,16],[4, 2],[4,10],[3,18],[5,14]
   ],
-  "Pingüinos": [
+  "Pinguinos": [
     [4, 7],[5, 3],[3,17],[4,11],[4, 5],[3,15],[4, 9],[5, 1],[4,13],
     [4,10],[5, 4],[3,18],[4,14],[3,16],[4,8],[5, 2],[3,12],[5,6]
   ],
@@ -309,13 +308,12 @@ const COURSES = {
     [4, 5],[4, 3],[4,13],[5,17],[3,15],[4, 7],[3, 9],[4,11],[5, 1],
     [4, 6],[4, 4],[5,16],[3,10],[4, 2],[4,12],[4, 8],[3,14],[5,18]
   ],
-  "Cumelén": [
+  "Cumelen": [
     [4, 5],[3, 9],[4, 7],[3,17],[4, 3],[5, 1],[4,15],[4,11],[3,13],
     [4, 6],[3,10],[4, 8],[3,18],[4, 4],[5, 2],[4,16],[4,12],[3,14]
   ],
 };
 
-// ─── Fórmulas ──────────────────────────────────────────────────────────────
 function strokes(hcp, hcpH) {
   return Math.floor(hcp/18) + (hcp%18 >= hcpH ? 1 : 0);
 }
@@ -325,17 +323,14 @@ function puntos(g, par, hcp, hcpH) {
 function aag(g, par, hcp, hcpH) {
   return Math.min(g, par + strokes(hcp,hcpH) + 2);
 }
-function hcp85(hcp)           { return Math.round(hcp * 0.85); }
+function hcp85(hcp) { return Math.round(hcp * 0.85); }
 function strokesTeam(hcp, hcpH) {
   const h = hcp85(hcp);
   return Math.floor(h/18) + (h%18 >= hcpH ? 1 : 0);
 }
 
-// ─── Estado ────────────────────────────────────────────────────────────────
 let players = [];
 let course  = [];
-
-// ─── Persistencia localStorage ─────────────────────────────────────────────
 const STATE_KEY = 'suasa_state_v1';
 
 function saveState() {
@@ -347,66 +342,53 @@ function saveState() {
       if (el && el.value.trim() !== '') scores[`${j}_${h}`] = el.value.trim();
     }
   });
-  const state = {
+  try { localStorage.setItem(STATE_KEY, JSON.stringify({
     courseName: document.getElementById('sc-title').textContent,
-    players,
-    course,
-    scores
-  };
-  try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch(e) {}
+    players, course, scores
+  })); } catch(e) {}
 }
 
 function restoreState() {
   let saved;
   try { saved = JSON.parse(localStorage.getItem(STATE_KEY)); } catch(e) { return false; }
   if (!saved || !saved.players || !saved.course) return false;
-
   players = saved.players;
-
-  // Re-derivar course desde COURSES + HCPs guardados (evita usar datos viejos de saved.course)
-  const courseKey = (saved.courseName || '').replace(/\s*[—–-].*$/, '').trim();
+  const courseKey = (saved.courseName || '').replace(/\s*[-—–].*$/, '').trim();
   if (courseKey && COURSES[courseKey]) {
     const base = COURSES[courseKey];
     const savedHcps = JSON.parse(localStorage.getItem('hcp_' + courseKey) || 'null');
-    course = base.map(([par], h) => {
-      const hcpH = (savedHcps && savedHcps[h] != null) ? savedHcps[h] : base[h][1];
-      return [par, hcpH];
-    });
+    course = base.map(([par], h) => [par, (savedHcps && savedHcps[h] != null) ? savedHcps[h] : base[h][1]]);
   } else {
-    course = saved.course; // fallback por si no se reconoce la cancha
+    course = saved.course;
   }
-
   document.getElementById('sc-title').textContent = saved.courseName || '';
   buildScorecard();
-  document.getElementById('team-section').style.display = 'none';
-  document.getElementById('section420').style.display   = 'none';
+  document.getElementById('team-section').style.display   = 'none';
+  document.getElementById('section420').style.display     = 'none';
+  document.getElementById('section-match').style.display  = 'none';
   if (players.length === 4) buildTeamSection();
   if (players.length === 3) build420Section();
-
-  // Restaurar scores
+  if (players.length === 2) buildMatchSection();
   Object.entries(saved.scores || {}).forEach(([key, val]) => {
     const el = document.getElementById(`g${key}`);
     if (el) el.value = val;
   });
   recalcAll();
-
   document.getElementById('setup').style.display = 'none';
   document.getElementById('scorecard').style.display = 'block';
   return true;
 }
 
-// ─── Restablecer HCPs de cancha (borra localStorage y recarga tabla) ──────
 function resetCourse() {
   const name = document.getElementById('csel').value;
   localStorage.removeItem('hcp_' + name);
   populateHcpTable();
   const toast = document.getElementById('save-toast');
-  toast.textContent = '↩ Restablecido';
+  toast.textContent = 'Restablecido';
   toast.style.display = 'block';
-  setTimeout(() => { toast.style.display = 'none'; toast.textContent = '✅ Guardado'; }, 2000);
+  setTimeout(() => { toast.style.display = 'none'; toast.textContent = '&#x2705; Guardado'; }, 2000);
 }
 
-// ─── Guardar cancha (localStorage) ────────────────────────────────────────
 function saveCourse() {
   const name = document.getElementById('csel').value;
   const hcps = [];
@@ -421,7 +403,6 @@ function saveCourse() {
   setTimeout(() => { toast.style.display = 'none'; }, 2000);
 }
 
-// ─── Poblar tabla de Hcp por hoyo ──────────────────────────────────────────
 function populateHcpTable() {
   const name = document.getElementById('csel').value;
   const data = COURSES[name];
@@ -442,7 +423,6 @@ function populateHcpTable() {
   }
 }
 
-// ─── Init setup ────────────────────────────────────────────────────────────
 (function() {
   const sel = document.getElementById('csel');
   Object.keys(COURSES).forEach(name => {
@@ -450,27 +430,19 @@ function populateHcpTable() {
     o.value = o.textContent = name;
     sel.appendChild(o);
   });
-
-  // ── Cambio 6: campos vacíos sin placeholder → sin menú cortar en móvil ──
   const tbody = document.getElementById('prows');
   for (let i = 0; i < 4; i++) {
     const tr = document.createElement('tr');
     tr.innerHTML =
       `<td>Jugador ${i+1}</td>` +
-      `<td><input class="ini" type="text" id="ini${i}" maxlength="7"
-         autocorrect="off" autocapitalize="characters"></td>` +
-      `<td><input class="hcp-in" type="number" id="hcp${i}" placeholder="0" min="0" max="54"
-         inputmode="numeric"></td>`;
+      `<td><input class="ini" type="text" id="ini${i}" maxlength="7" autocorrect="off" autocapitalize="characters"></td>` +
+      `<td><input class="hcp-in" type="number" id="hcp${i}" placeholder="0" min="0" max="54" inputmode="numeric"></td>`;
     tbody.appendChild(tr);
   }
-
   populateHcpTable();
-
-  // ── Cambio 5: intentar restaurar estado guardado ──────────────────────────
   restoreState();
 })();
 
-// ─── Comenzar ──────────────────────────────────────────────────────────────
 function startGame() {
   players = [];
   for (let i = 0; i < 4; i++) {
@@ -478,38 +450,36 @@ function startGame() {
     if (!ini) continue;
     const hcpRaw = document.getElementById(`hcp${i}`).value.trim();
     const hcp = hcpRaw === '' ? 0 : parseInt(hcpRaw);
-    if (isNaN(hcp)||hcp<0||hcp>54) { alert(`HCP inválido para jugador ${i+1}.`); return; }
+    if (isNaN(hcp)||hcp<0||hcp>54) { alert(`HCP invalido para jugador ${i+1}.`); return; }
     players.push({ ini, hcp });
   }
-  if (!players.length) { alert('Ingresá las iniciales de al menos 1 jugador.'); return; }
-  if (players.length > 4) { alert('Máximo 4 jugadores.'); return; }
-
+  if (!players.length) { alert('Ingresa iniciales de al menos 1 jugador.'); return; }
+  if (players.length > 4) { alert('Maximo 4 jugadores.'); return; }
   const name = document.getElementById('csel').value;
   const base = COURSES[name];
   course = base.map(([par], h) => {
     const hv = parseInt(document.getElementById(`hv${h}`).value);
     return [par, isNaN(hv)||hv<1||hv>18 ? base[h][1] : hv];
   });
-
   document.getElementById('sc-title').textContent = name + '  —  S.U.A.S.A.';
   buildScorecard();
-  document.getElementById('team-section').style.display = 'none';
-  document.getElementById('section420').style.display   = 'none';
+  document.getElementById('team-section').style.display   = 'none';
+  document.getElementById('section420').style.display     = 'none';
+  document.getElementById('section-match').style.display  = 'none';
   if (players.length === 4) buildTeamSection();
   if (players.length === 3) build420Section();
+  if (players.length === 2) buildMatchSection();
   document.getElementById('setup').style.display = 'none';
   document.getElementById('scorecard').style.display = 'block';
   saveState();
 }
 
-// ── Cambio 5: Nueva Partida limpia localStorage ────────────────────────────
 function newGame() {
   try { localStorage.removeItem(STATE_KEY); } catch(e) {}
   document.getElementById('scorecard').style.display = 'none';
   document.getElementById('setup').style.display = 'block';
 }
 
-// ─── Scorecard Stableford ──────────────────────────────────────────────────
 function buildScorecard() {
   const tbl = document.getElementById('sc-tbl');
   tbl.innerHTML = '';
@@ -531,10 +501,12 @@ function buildScorecard() {
       html += `<td class="c-player"><input class="g" type="text" id="g${j}_${h}" inputmode="numeric" pattern="[0-9xX]*" autocomplete="off"></td>`;
     });
     tr.innerHTML = html; tbody.appendChild(tr);
-    players.forEach((_,j) => {
+    players.forEach((p,j) => {
       const el = document.getElementById(`g${j}_${h}`);
+      const stk = strokesTeam(p.hcp, hcpH);
+      const [ibg,ifg] = strokeBg(stk);
+      el.style.background = ibg; el.style.color = ifg;
       el.addEventListener('input', function() {
-        // ── Cambio 2: convertir "0" automáticamente a "X" ──────────────────
         if (this.value === '0') this.value = 'X';
         else if (this.value.toLowerCase() === 'x') this.value = 'X';
         recalcAll();
@@ -553,51 +525,47 @@ function buildScorecard() {
     players.forEach((_,j) => html += `<td id="${mkId(j)}">—</td>`);
     tr.innerHTML = html; tbody.appendChild(tr);
   }
-
   for (let h=0; h<9; h++) addHole(h);
-  // ── Cambio 4: Ida / Vuelta ─────────────────────────────────────────────────
   addSubRow('Ida',    'r-sub', course.slice(0,9).reduce((s,[p])=>s+p,0), j=>`f9_${j}`);
   for (let h=9; h<18; h++) addHole(h);
   addSubRow('Vuelta', 'r-sub', course.slice(9).reduce((s,[p])=>s+p,0),  j=>`b9_${j}`);
   addSubRow('TOTAL',  'r-total', course.reduce((s,[p])=>s+p,0),          j=>`tot_${j}`);
   addResultRow('STABLEFORD','r-stbl', j=>`stbl_${j}`);
-  addResultRow('AAG',        'r-aag',  j=>`aag_${j}`);
+  addResultRow('AAG',       'r-aag',  j=>`aag_${j}`);
 }
 
-// ── Cambio 3: nueva paleta de colores ─────────────────────────────────────
-// pts: Stableford points  |  isPickup: levantó pelota  |  netOverPar: neto vs par (positivo = sobre par)
+function strokeBg(stk) {
+  if (stk >= 2) return ['#42a5f5','#fff'];
+  if (stk === 1) return ['#b3e5fc','#1a3a1a'];
+  return ['#e8f5e9','#1a3a1a'];
+}
+
 function scoreColor(pts, isPickup, netOverPar) {
-  if (isPickup)   return ['#CC4400','#fff'];     // X / Mayor: naranja oscuro
-  if (pts >= 4)   return ['#1565C0','#fff'];     // Eagle o mejor: azul
-  if (pts === 3)  return ['#5BC8F5','#1a3a1a']; // Birdie: celeste
-  if (pts === 2)  return ['#4CAF50','#fff'];     // Par: verde
-  if (pts === 1)  return ['#FFD700','#1a3a1a']; // Bogey: amarillo
-  if (netOverPar === 2) return ['#FFA040','#1a3a1a']; // Doble Bogey exacto: naranja claro
-  return ['#CC4400','#fff'];  // Triple bogey o peor: naranja oscuro
+  if (isPickup)        return ['#CC4400','#fff'];
+  if (pts >= 4)        return ['#1565C0','#fff'];
+  if (pts === 3)       return ['#5BC8F5','#1a3a1a'];
+  if (pts === 2)       return ['#4CAF50','#fff'];
+  if (pts === 1)       return ['#FFD700','#1a3a1a'];
+  if (netOverPar === 2) return ['#FFA040','#1a3a1a'];
+  return ['#CC4400','#fff'];
 }
 
 function recalcAll() {
   players.forEach((p, j) => {
     let f9g=0, b9g=0, totPts=0, totAAG=0;
-    let f9ok=false, b9ok=false;
-    let f9pickup=false, b9pickup=false;
-
+    let f9ok=false, b9ok=false, f9pickup=false, b9pickup=false;
     for (let h=0; h<18; h++) {
       const el = document.getElementById(`g${j}_${h}`);
       const raw = el ? el.value.trim() : '';
-
-      // ── Cambio 2: detectar pickup (X) ─────────────────────────────────────
       const isPickup = (raw === 'X');
       const g = parseInt(raw);
       if (!isPickup && (raw===''||isNaN(g)||g<=0)) {
-        if(el){ el.style.background='#e8f5e9'; el.style.color='#1a3a1a'; }
+        if(el){ const [ibg,ifg]=strokeBg(strokesTeam(p.hcp,course[h][1])); el.style.background=ibg; el.style.color=ifg; }
         continue;
       }
-
       const [par,hcpH] = course[h];
       const stk = strokes(p.hcp, hcpH);
       const np2 = par + stk + 2;
-
       let pts, holeAAG;
       if (isPickup) {
         pts = 0; holeAAG = np2;
@@ -606,28 +574,22 @@ function recalcAll() {
       } else {
         pts = puntos(g, par, p.hcp, hcpH);
         holeAAG = aag(g, par, p.hcp, hcpH);
-        const netOverPar = g - par - stk;
-        const [bg,fg] = scoreColor(pts, false, netOverPar);
+        const [bg,fg] = scoreColor(pts, false, g - par - stk);
         if (el) { el.style.background=bg; el.style.color=fg; }
         if (h<9) { f9g+=g; f9ok=true; } else { b9g+=g; b9ok=true; }
       }
-      totPts += pts;
-      totAAG += holeAAG;
+      totPts += pts; totAAG += holeAAG;
     }
-
     const any = f9ok||b9ok;
-    // ── Cambio 2: mostrar X en totales si hubo pickup ──────────────────────
     set(`f9_${j}`,   !f9ok ? '—' : f9pickup ? 'X' : f9g);
     set(`b9_${j}`,   !b9ok ? '—' : b9pickup ? 'X' : b9g);
     set(`tot_${j}`,  !any  ? '—' : (f9pickup||b9pickup) ? 'X' : f9g+b9g);
     set(`stbl_${j}`, any   ? totPts : '—');
     set(`aag_${j}`,  any   ? totAAG : '—');
   });
-
   if (players.length===4) recalcTeam();
   if (players.length===3) recalc420();
-
-  // ── Cambio 5: auto-guardar en cada cambio ─────────────────────────────────
+  if (players.length===2) recalcMatch();
   saveState();
 }
 
@@ -635,9 +597,7 @@ function set(id, val) {
   const el = document.getElementById(id); if (el) el.textContent = val;
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-//  MODALIDAD: A LA 1° Y 2° MEJORES  (4 jugadores)
-// ════════════════════════════════════════════════════════════════════════════
+// ════ A LA 1° Y 2° MEJORES (4 jugadores) ════
 
 function buildTeamSection() {
   document.getElementById('team-section').style.display = 'block';
@@ -645,7 +605,6 @@ function buildTeamSection() {
   document.getElementById('team-sub').textContent =
     `Equipo A: ${players[0].ini}(${h85s[0]}) / ${players[1].ini}(${h85s[1]})` +
     `   ·   Equipo B: ${players[2].ini}(${h85s[2]}) / ${players[3].ini}(${h85s[3]})`;
-
   const tbl = document.getElementById('team-tbl');
   tbl.innerHTML = '';
   const thead = document.createElement('thead');
@@ -659,7 +618,6 @@ function buildTeamSection() {
     </tr>`;
   tbl.appendChild(thead);
   const tbody = document.createElement('tbody'); tbl.appendChild(tbody);
-
   function addHoleRow(h) {
     const [par,hcpH] = course[h];
     const tr = document.createElement('tr');
@@ -671,13 +629,11 @@ function buildTeamSection() {
   }
   function addTeamRow(label, idA, idB, css) {
     const tr = document.createElement('tr'); tr.className = css;
-    tr.innerHTML =
-      `<td class="lbl" colspan="3">${label}</td>` +
+    tr.innerHTML = `<td class="lbl" colspan="3">${label}</td>` +
       `<td class="c-team" id="${idA}">—</td><td class="c-team" id="${idB}">—</td>`;
     tbody.appendChild(tr);
   }
   for (let h=0; h<9; h++) addHoleRow(h);
-  // ── Cambio 4: Ida / Vuelta ─────────────────────────────────────────────────
   addTeamRow('Ida',    'ta_f9','tb_f9','r-sub');
   for (let h=9; h<18; h++) addHoleRow(h);
   addTeamRow('Vuelta', 'ta_b9','tb_b9','r-sub');
@@ -686,32 +642,27 @@ function buildTeamSection() {
 }
 
 function calcHoleTeam(h) {
-  const [par,hcpH] = course[h];
+  const [,hcpH] = course[h];
   const nets = [];
   for (let j = 0; j < 4; j++) {
     const el = document.getElementById(`g${j}_${h}`);
     if (!el || el.value.trim() === '') return null;
     const raw = el.value.trim();
-    // ── Cambio 2: pickup (X) pierde el hoyo (net = Infinity) ──────────────
     const isPickup = (raw === 'X');
     const g = parseInt(raw);
     if (!isPickup && (isNaN(g) || g <= 0)) return null;
-    const stk = strokesTeam(players[j].hcp, hcpH);
-    nets[j] = isPickup ? Infinity : g - stk;
+    nets[j] = isPickup ? Infinity : g - strokesTeam(players[j].hcp, hcpH);
   }
-  const [a1, a2] = nets[0] <= nets[1] ? [nets[0], nets[1]] : [nets[1], nets[0]];
-  const [b1, b2] = nets[2] <= nets[3] ? [nets[2], nets[3]] : [nets[3], nets[2]];
-  const pts = [0, 0];
-  if      (a1 < b1) pts[0] += 2;
-  else if (b1 < a1) pts[1] += 2;
-  // Empate (incluyendo Infinity vs Infinity) → 0 pts, correcto
-  if      (a2 < b2) pts[0] += 1;
-  else if (b2 < a2) pts[1] += 1;
+  const [a1,a2] = nets[0]<=nets[1] ? [nets[0],nets[1]] : [nets[1],nets[0]];
+  const [b1,b2] = nets[2]<=nets[3] ? [nets[2],nets[3]] : [nets[3],nets[2]];
+  const pts = [0,0];
+  if (a1<b1) pts[0]+=2; else if (b1<a1) pts[1]+=2;
+  if (a2<b2) pts[0]+=1; else if (b2<a2) pts[1]+=1;
   return pts;
 }
 
 function applyTeam(td, p) {
-  td.textContent = p === 0 ? '0' : p;
+  td.textContent = p===0 ? '0' : p;
   if (p===3) td.className+=' tc-3';
   else if (p===2) td.className+=' tc-2';
   else if (p===1) td.className+=' tc-1';
@@ -722,47 +673,136 @@ function recalcTeam() {
   let f9A=0,f9B=0,b9A=0,b9B=0,f9ok=false,b9ok=false;
   for (let h=0; h<18; h++) {
     const pts = calcHoleTeam(h);
-    const tdA = document.getElementById(`ta_${h}`);
-    const tdB = document.getElementById(`tb_${h}`);
+    const tdA=document.getElementById(`ta_${h}`), tdB=document.getElementById(`tb_${h}`);
     if (!tdA||!tdB) continue;
     tdA.className='c-team'; tdB.className='c-team';
     if (!pts) { tdA.textContent='·'; tdB.textContent='·'; continue; }
-    applyTeam(tdA, pts[0]); applyTeam(tdB, pts[1]);
+    applyTeam(tdA,pts[0]); applyTeam(tdB,pts[1]);
     if (h<9) { f9A+=pts[0]; f9B+=pts[1]; f9ok=true; }
     else     { b9A+=pts[0]; b9B+=pts[1]; b9ok=true; }
   }
-  const setTd = (id,val) => { const el=document.getElementById(id); if(el){el.textContent=val;el.className='c-team';} };
-  setTd('ta_f9', f9ok?f9A:'—'); setTd('tb_f9', f9ok?f9B:'—');
-  setTd('ta_b9', b9ok?b9A:'—'); setTd('tb_b9', b9ok?b9B:'—');
+  const setTd=(id,val)=>{const el=document.getElementById(id);if(el){el.textContent=val;el.className='c-team';}};
+  setTd('ta_f9',f9ok?f9A:'—'); setTd('tb_f9',f9ok?f9B:'—');
+  setTd('ta_b9',b9ok?b9A:'—'); setTd('tb_b9',b9ok?b9B:'—');
   const any=f9ok||b9ok, totA=f9A+b9A, totB=f9B+b9B;
-  setTd('ta_tot', any?totA:'—'); setTd('tb_tot', any?totB:'—');
-
+  setTd('ta_tot',any?totA:'—'); setTd('tb_tot',any?totB:'—');
   const dA=document.getElementById('ta_dif'), dB=document.getElementById('tb_dif');
   if (!dA||!dB) return;
   dA.className='c-team'; dB.className='c-team';
   if (!any) { dA.textContent='—'; dB.textContent='—'; }
   else if (totA===totB) { dA.textContent='EMPATE'; dB.textContent='EMPATE'; }
   else if (totA>totB) {
-    const d=totA-totB;
-    dA.textContent=`+${d}`; dA.className+=' tc-2';
-    dB.textContent=`-${d}`; dB.className+=' tc-0';
+    dA.textContent=`+${totA-totB}`; dA.className+=' tc-2'; dB.textContent='—';
   } else {
-    const d=totB-totA;
-    dA.textContent=`-${d}`; dA.className+=' tc-0';
-    dB.textContent=`+${d}`; dB.className+=' tc-2';
+    dA.textContent='—'; dB.textContent=`+${totB-totA}`; dB.className+=' tc-2';
   }
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-//  MODALIDAD: 4 — 2 — 0  (3 jugadores)
-// ════════════════════════════════════════════════════════════════════════════
+// ════ MATCH (2 jugadores) ════
+
+function buildMatchSection() {
+  document.getElementById('section-match').style.display = 'block';
+  const h85s = players.map(p => hcp85(p.hcp));
+  document.getElementById('sub-match').textContent =
+    `${players[0].ini} (HCP ${h85s[0]})  vs  ${players[1].ini} (HCP ${h85s[1]})`;
+  const tbl = document.getElementById('tbl-match');
+  tbl.innerHTML = '';
+  const thead = document.createElement('thead');
+  const colors = ['#ffd700','#87ceeb'];
+  let th = '<tr><th class="c-fix">H</th><th class="c-fix">Par</th><th class="c-fix">HCP</th>';
+  players.forEach((p,i) =>
+    th += `<th class="c-match" style="color:${colors[i]}">${p.ini}<br><span style="color:#a8d8a8;font-size:10px">HCP ${h85s[i]}</span></th>`
+  );
+  th += '</tr>';
+  thead.innerHTML = th; tbl.appendChild(thead);
+  const tbody = document.createElement('tbody'); tbl.appendChild(tbody);
+  function addHoleMatch(h) {
+    const [par,hcpH] = course[h];
+    const tr = document.createElement('tr');
+    tr.className = h%2===0 ? 'r-even':'r-odd';
+    let html = `<td class="c-fix">${h+1}</td><td class="c-fix">${par}</td><td class="c-fix">${hcpH}</td>`;
+    players.forEach((_,j) => html += `<td class="c-match" id="pm_${j}_${h}">·</td>`);
+    tr.innerHTML = html; tbody.appendChild(tr);
+  }
+  function addRowMatch(label, mkId, css) {
+    const tr = document.createElement('tr'); tr.className = css;
+    let html = `<td class="lbl" colspan="3">${label}</td>`;
+    players.forEach((_,j) => html += `<td class="c-match" id="${mkId(j)}">—</td>`);
+    tr.innerHTML = html; tbody.appendChild(tr);
+  }
+  for (let h=0; h<9; h++) addHoleMatch(h);
+  addRowMatch('Ida',        j=>`pmf9_${j}`,  'r-sub');
+  for (let h=9; h<18; h++) addHoleMatch(h);
+  addRowMatch('Vuelta',     j=>`pmb9_${j}`,  'r-sub');
+  addRowMatch('TOTAL',      j=>`pmtot_${j}`, 'r-total');
+  addRowMatch('DIFERENCIA', j=>`pmdif_${j}`, 'r-diff');
+}
+
+function calcHoleMatch(h) {
+  const [,hcpH] = course[h];
+  const nets = players.map((p,j) => {
+    const el = document.getElementById(`g${j}_${h}`);
+    if (!el||el.value.trim()==='') return null;
+    const raw = el.value.trim();
+    const isPickup = (raw==='X');
+    const g = parseInt(raw);
+    if (!isPickup&&(isNaN(g)||g<=0)) return null;
+    return isPickup ? Infinity : g - strokesTeam(p.hcp,hcpH);
+  });
+  if (nets.some(n=>n===null)) return null;
+  if (nets[0] < nets[1]) return [1,0];
+  if (nets[1] < nets[0]) return [0,1];
+  return [0,0];
+}
+
+function recalcMatch() {
+  const f9=[0,0], b9=[0,0];
+  let f9ok=false, b9ok=false;
+  for (let h=0; h<18; h++) {
+    const pts = calcHoleMatch(h);
+    for (let j=0; j<2; j++) {
+      const td = document.getElementById(`pm_${j}_${h}`);
+      if (!td) continue;
+      td.className = 'c-match';
+      if (!pts) { td.textContent='·'; continue; }
+      const p=pts[j], other=pts[1-j];
+      if      (p===1)            { td.textContent='1'; td.className+=' mc-win'; }
+      else if (p===0&&other===0) { td.textContent='='; td.className+=' mc-tie'; }
+      else                       { td.textContent='—'; td.className+=' mc-lose'; }
+    }
+    if (pts) {
+      if (h<9) { f9[0]+=pts[0]; f9[1]+=pts[1]; f9ok=true; }
+      else     { b9[0]+=pts[0]; b9[1]+=pts[1]; b9ok=true; }
+    }
+  }
+  const tot = f9.map((v,j)=>v+b9[j]);
+  const setM=(id,val)=>{ const el=document.getElementById(id); if(el){el.textContent=val;el.className='c-match';} };
+  players.forEach((_,j)=>{
+    setM(`pmf9_${j}`,  f9ok ? (f9[j]||'0') : '—');
+    setM(`pmb9_${j}`,  b9ok ? (b9[j]||'0') : '—');
+    setM(`pmtot_${j}`, (f9ok||b9ok) ? (tot[j]||'0') : '—');
+  });
+  const dEls = players.map((_,j)=>document.getElementById(`pmdif_${j}`));
+  dEls.forEach(el=>{ if(el) el.className='c-match'; });
+  if (!(f9ok||b9ok)) { dEls.forEach(el=>{ if(el) el.textContent='—'; }); return; }
+  if (tot[0]===tot[1]) {
+    dEls.forEach(el=>{ if(el) el.textContent='EMPATE'; });
+  } else if (tot[0]>tot[1]) {
+    if(dEls[0]){ dEls[0].textContent=`+${tot[0]-tot[1]}`; dEls[0].className+=' mc-win'; }
+    if(dEls[1]){ dEls[1].textContent='—'; }
+  } else {
+    if(dEls[0]){ dEls[0].textContent='—'; }
+    if(dEls[1]){ dEls[1].textContent=`+${tot[1]-tot[0]}`; dEls[1].className+=' mc-win'; }
+  }
+}
+
+// ════ 4 - 2 - 0 (3 jugadores) ════
 
 function build420Section() {
   document.getElementById('section420').style.display = 'block';
   const h85s = players.map(p=>hcp85(p.hcp));
   document.getElementById('sub420').textContent =
     players.map((p,i)=>`${p.ini}(${h85s[i]})`).join('  ·  ');
-
   const tbl = document.getElementById('tbl420');
   tbl.innerHTML = '';
   const thead = document.createElement('thead');
@@ -774,7 +814,6 @@ function build420Section() {
   th += '</tr>';
   thead.innerHTML = th; tbl.appendChild(thead);
   const tbody = document.createElement('tbody'); tbl.appendChild(tbody);
-
   function addHole420(h) {
     const [par,hcpH] = course[h];
     const tr = document.createElement('tr');
@@ -790,21 +829,19 @@ function build420Section() {
     tr.innerHTML = html; tbody.appendChild(tr);
   }
   for (let h=0; h<9; h++) addHole420(h);
-  // ── Cambio 4: Ida / Vuelta ─────────────────────────────────────────────────
   addRow420('Ida',    j=>`p4f9_${j}`, 'r-sub');
   for (let h=9; h<18; h++) addHole420(h);
   addRow420('Vuelta', j=>`p4b9_${j}`, 'r-sub');
-  addRow420('TOTAL',   j=>`p4tot_${j}`, 'r-total');
-  addRow420('DIFERENCIA', j=>`p4dif_${j}`, 'r-diff');
+  addRow420('TOTAL',       j=>`p4tot_${j}`, 'r-total');
+  addRow420('DIFERENCIA',  j=>`p4dif_${j}`, 'r-diff');
 }
 
 function calcHole420(h) {
-  const [par,hcpH] = course[h];
+  const [,hcpH] = course[h];
   const data = players.map((p,j) => {
     const el = document.getElementById(`g${j}_${h}`);
     if (!el||el.value.trim()==='') return null;
     const raw = el.value.trim();
-    // ── Cambio 2: pickup = 3ro en 4-2-0 (net Infinity) ────────────────────
     const isPickup = (raw === 'X');
     const g = parseInt(raw);
     if (!isPickup && (isNaN(g)||g<=0)) return null;
@@ -812,37 +849,26 @@ function calcHole420(h) {
     return { j, net: isPickup ? Infinity : g-stk, pickup: isPickup };
   });
   if (data.some(d=>d===null)) return null;
-
   const pts = [0,0,0];
   const active = data.filter(d=>!d.pickup).sort((a,b)=>a.net-b.net);
-
-  if (active.length === 3) {
-    // Nadie levantó → lógica original
-    const n0=active[0].net, n1=active[1].net, n2=active[2].net;
-    if (n0===n1 && n1===n2) {
-      // Triple empate → 0 c/u
-    } else if (n0===n1) {
-      pts[active[0].j]=3; pts[active[1].j]=3;
-    } else if (n1===n2) {
-      pts[active[0].j]=4; pts[active[1].j]=1; pts[active[2].j]=1;
-    } else {
-      pts[active[0].j]=4; pts[active[1].j]=2;
-    }
-  } else if (active.length === 2) {
-    const n0=active[0].net, n1=active[1].net;
-    if (n0===n1) { pts[active[0].j]=3; pts[active[1].j]=3; }
-    else         { pts[active[0].j]=4; pts[active[1].j]=2; }
-  } else if (active.length === 1) {
-    pts[active[0].j] = 4;
+  if (active.length===3) {
+    const [n0,n1,n2] = active.map(a=>a.net);
+    if (n0===n1&&n1===n2) {}
+    else if (n0===n1) { pts[active[0].j]=3; pts[active[1].j]=3; }
+    else if (n1===n2) { pts[active[0].j]=4; pts[active[1].j]=1; pts[active[2].j]=1; }
+    else              { pts[active[0].j]=4; pts[active[1].j]=2; }
+  } else if (active.length===2) {
+    if (active[0].net===active[1].net) { pts[active[0].j]=3; pts[active[1].j]=3; }
+    else                               { pts[active[0].j]=4; pts[active[1].j]=2; }
+  } else if (active.length===1) {
+    pts[active[0].j]=4;
   }
-  // Los que levantaron quedan con 0 (ya inicializado)
   return pts;
 }
 
 function recalc420() {
-  const f9 =[0,0,0], b9=[0,0,0];
+  const f9=[0,0,0], b9=[0,0,0];
   let f9ok=false, b9ok=false;
-
   for (let h=0; h<18; h++) {
     const pts = calcHole420(h);
     for (let j=0; j<3; j++) {
@@ -863,18 +889,14 @@ function recalc420() {
       else     { pts.forEach((p,j)=>b9[j]+=p); b9ok=true; }
     }
   }
-
   const tot = f9.map((v,j)=>v+b9[j]);
-  const setP4 = (id,val) => { const el=document.getElementById(id); if(el){el.textContent=val;el.className='c-p420';} };
+  const setP4=(id,val)=>{ const el=document.getElementById(id); if(el){el.textContent=val;el.className='c-p420';} };
   players.forEach((_,j)=>{
-    setP4(`p4f9_${j}`, f9ok ? f9[j] : '—');
-    setP4(`p4b9_${j}`, b9ok ? b9[j] : '—');
-    setP4(`p4tot_${j}`, (f9ok||b9ok) ? tot[j] : '—');
+    setP4(`p4f9_${j}`,  f9ok?f9[j]:'—');
+    setP4(`p4b9_${j}`,  b9ok?b9[j]:'—');
+    setP4(`p4tot_${j}`, (f9ok||b9ok)?tot[j]:'—');
   });
-
-  if (!(f9ok||b9ok)) {
-    players.forEach((_,j)=>setP4(`p4dif_${j}`,'—')); return;
-  }
+  if (!(f9ok||b9ok)) { players.forEach((_,j)=>setP4(`p4dif_${j}`,'—')); return; }
   const minTot = Math.min(...tot);
   players.forEach((_,j)=>{
     const el = document.getElementById(`p4dif_${j}`);
