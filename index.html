@@ -19,7 +19,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20260812-010";
+const VERSION = "20260812-011";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -317,10 +317,10 @@ td.fc-0 { color:#aaa !important; }
     <h2>⛳ S.U.A.S.A. — Manual</h2>
 
     <h3>Configuración</h3>
-    <p>• Elegí la cancha del selector.<br>
+    <p>• Elegí la cancha del selector (si no figura en el listado podés ingresarla manualmente).<br>
     • Ingresá las iniciales y el HCP oficial de cada jugador.<br>
     • Verificá (y ajustá si es necesario) los HCP de cada hoyo.<br>
-    • <strong>💾 Guardar Hcp</strong> guarda los HCP de esa cancha para la próxima vez.<br>
+    • <strong>💾 Guardar Hcp</strong> guarda esos Hcp modificados para la próxima vez.<br>
     • <strong>↩ Restablecer Hcp</strong> vuelve a los valores originales de la cancha.</p>
 
     <h3>Colores de score</h3>
@@ -341,7 +341,7 @@ td.fc-0 { color:#aaa !important; }
 
     <h3 style="color:#ffd700">🏆 A la 1° y 2° mejor pelota &nbsp;(4 jug.)</h3>
     <p>Equipos fijos: <strong>Equipo A</strong> = jugadores 1 y 2 · <strong>Equipo B</strong> = jugadores 3 y 4.<br>
-    Cada hoyo se disputan <strong>2 puntos</strong>:<br>
+    En cada hoyo se disputan <strong>3 puntos</strong>:<br>
     • <span class="pos">+2</span> al equipo con el 1° mejor neto único.<br>
     • <span class="pos">+1</span> al equipo con el 2° mejor neto único.<br>
     Empate = 0 pts. HCP al 85%.</p>
