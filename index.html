@@ -19,7 +19,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20260812-008";
+const VERSION = "20260812-009";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -98,13 +98,21 @@ input.hv {
 }
 input.hv:focus { outline:2px solid #ffd700; }
 
+.btn-hcp-row { display:flex; gap:8px; margin-bottom:12px; }
 .btn-save {
-  width:100%; padding:11px; background:#1a3a6a; color:#87ceeb;
-  font-size:15px; font-weight:bold; border:none; border-radius:8px;
-  cursor:pointer; letter-spacing:.5px; touch-action:manipulation;
-  -webkit-user-select:none; user-select:none; margin-bottom:12px;
+  flex:1; padding:11px 8px; background:#1a3a6a; color:#87ceeb;
+  font-size:13px; font-weight:bold; border:none; border-radius:8px;
+  cursor:pointer; touch-action:manipulation;
+  -webkit-user-select:none; user-select:none;
 }
 .btn-save:active { background:#254d8a; }
+.btn-reset-hcp {
+  flex:1; padding:11px 8px; background:#3a1a1a; color:#f08080;
+  font-size:13px; font-weight:bold; border:none; border-radius:8px;
+  cursor:pointer; touch-action:manipulation;
+  -webkit-user-select:none; user-select:none;
+}
+.btn-reset-hcp:active { background:#5a2a2a; }
 #save-toast {
   display:none; text-align:center; color:#90ee90;
   font-size:13px; font-weight:bold; margin:-8px 0 10px;
@@ -116,6 +124,31 @@ input.hv:focus { outline:2px solid #ffd700; }
   cursor:pointer; letter-spacing:1px; touch-action:manipulation; -webkit-user-select:none; user-select:none;
 }
 .btn-start:active { background:#3d8a3d; }
+
+/* ── BOTÓN MANUAL ── */
+.btn-manual {
+  width:100%; padding:10px; background:#072b18; color:#87ceeb;
+  font-size:13px; font-weight:bold; border:1px solid #3d8a3d; border-radius:8px;
+  cursor:pointer; touch-action:manipulation; margin-top:10px;
+  -webkit-user-select:none; user-select:none;
+}
+.btn-manual:active { background:#0d3318; }
+
+/* ── MANUAL MODAL ── */
+.manual-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:300; align-items:flex-start; justify-content:center; overflow-y:auto; padding:20px 12px 40px; }
+.manual-bg.open { display:flex; }
+.manual-box { background:#0d3318; border:2px solid #3d8a3d; border-radius:14px; padding:22px 18px; width:100%; max-width:440px; }
+.manual-box h2 { color:#ffd700; font-size:18px; text-align:center; margin-bottom:16px; letter-spacing:1px; }
+.manual-box h3 { color:#90ee90; font-size:13px; font-weight:bold; margin:14px 0 6px; text-transform:uppercase; letter-spacing:.5px; border-bottom:1px solid #2d6a2d; padding-bottom:4px; }
+.manual-box p  { color:#e8ffe8; font-size:13px; line-height:1.6; margin-bottom:6px; }
+.manual-box .pts-tbl { width:100%; border-collapse:collapse; margin:8px 0; font-size:12px; }
+.manual-box .pts-tbl th { background:#1a472a; color:#a8d8a8; padding:5px 6px; text-align:center; }
+.manual-box .pts-tbl td { padding:5px 6px; text-align:center; border-bottom:1px solid #2d6a2d; color:#e8ffe8; }
+.manual-box .pts-tbl tr:nth-child(even) td { background:#1a472a; }
+.manual-box .hilite { color:#ffd700; font-weight:bold; }
+.manual-box .pos { color:#90ee90; font-weight:bold; }
+.manual-box .neg { color:#ff7777; font-weight:bold; }
+.btn-close-manual { display:block; width:100%; margin-top:18px; padding:13px; background:#2d6a2d; color:#fff; font-size:15px; font-weight:bold; border:none; border-radius:8px; cursor:pointer; touch-action:manipulation; }
 
 /* ── MODAL MODALIDAD ── */
 .mode-modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.80); z-index:100; align-items:center; justify-content:center; }
@@ -228,9 +261,13 @@ td.fc-0 { color:#aaa !important; }
     </table>
   </div>
 
-  <button class="btn-save" onclick="saveCourse()">💾 &nbsp;Guardar Hcp de esta Cancha</button>
+  <div class="btn-hcp-row">
+    <button class="btn-save"      onclick="saveCourse()">💾 Guardar Hcp</button>
+    <button class="btn-reset-hcp" onclick="resetCourse()">↩ Restablecer Hcp</button>
+  </div>
   <div id="save-toast">✅ Guardado</div>
   <button class="btn-start" onclick="startGame()">COMENZAR &nbsp;▶</button>
+  <button class="btn-manual" onclick="openManual()">📋 &nbsp;Manual de instrucciones</button>
 </div>
 
 <!-- ── SCORECARD ── -->
@@ -272,6 +309,61 @@ td.fc-0 { color:#aaa !important; }
   </div>
 
   <button class="btn-new" onclick="newGame()">↩ &nbsp;Nueva Partida</button>
+</div>
+
+<!-- ── MANUAL DE INSTRUCCIONES ── -->
+<div class="manual-bg" id="manual-modal">
+  <div class="manual-box">
+    <h2>⛳ S.U.A.S.A. — Manual</h2>
+
+    <h3>El juego</h3>
+    <p>S.U.A.S.A. (Score Único Acumulado Sin Averías) es una app de tarjeta de golf para <strong>3 o 4 jugadores</strong> con múltiples modalidades de puntaje simultáneas.</p>
+
+    <h3>Configuración</h3>
+    <p>• Elegí la cancha del selector.<br>
+    • Ingresá las iniciales y el HCP oficial de cada jugador.<br>
+    • Verificá (y ajustá si es necesario) los HCP de cada hoyo.<br>
+    • <strong>💾 Guardar Hcp</strong> guarda los HCP de esa cancha para la próxima vez.<br>
+    • <strong>↩ Restablecer Hcp</strong> vuelve a los valores originales de la cancha.</p>
+
+    <h3>Colores de score</h3>
+    <table class="pts-tbl">
+      <thead><tr><th>Color</th><th>Resultado neto</th></tr></thead>
+      <tbody>
+        <tr><td style="background:#1565C0;color:#fff">■ Azul</td><td>Eagle o mejor</td></tr>
+        <tr><td style="background:#5BC8F5;color:#1a3a1a">■ Celeste</td><td>Birdie</td></tr>
+        <tr><td style="background:#4CAF50;color:#fff">■ Verde</td><td>Par</td></tr>
+        <tr><td style="background:#FFD700;color:#1a3a1a">■ Amarillo</td><td>Bogey</td></tr>
+        <tr><td style="background:#FFA040;color:#1a3a1a">■ Naranja claro</td><td>Doble Bogey</td></tr>
+        <tr><td style="background:#CC4400;color:#fff">■ Naranja oscuro</td><td>Triple+ / pickup (X)</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:11px;color:#a8d8a8;margin-top:4px">Pickup: escribí <strong>X</strong> o <strong>0</strong> → se registra como mayor al doble bogey.</p>
+
+    <h3>Stableford &amp; AAG</h3>
+    <p>Se calculan automáticamente con HCP 100%.<br>
+    <span class="hilite">Stableford:</span> par + HCP + 2 − score (mín. 0).<br>
+    <span class="hilite">AAG:</span> mín(score, par + HCP + 2).</p>
+
+    <h3 style="color:#ffd700">🏆 A la 1° y 2° mejor pelota &nbsp;(4 jug.)</h3>
+    <p>Equipos fijos: <strong>Equipo A</strong> = jugadores 1 y 2 · <strong>Equipo B</strong> = jugadores 3 y 4.<br>
+    Cada hoyo se disputan <strong>2 puntos</strong>:<br>
+    • <span class="pos">+2</span> al equipo con el 1° mejor neto único.<br>
+    • <span class="pos">+1</span> al equipo con el 2° mejor neto único.<br>
+    Empate = 0 pts. HCP al 85%.</p>
+
+    <h3 style="color:#90ee90">⛳ A la mejor pelota de c/equipo &nbsp;(4 jug.)</h3>
+    <p>Equipos fijos: <strong>Equipo A</strong> = jugadores 1 y 2 · <strong>Equipo B</strong> = jugadores 3 y 4.<br>
+    Cada hoyo vale <strong>1 punto</strong>: gana el equipo cuyo jugador hizo el menor neto.<br>
+    Empate = 0 pts para ambos. HCP al 85%.</p>
+
+    <h3 style="color:#87ceeb">⚡ 4 — 2 — 0 &nbsp;(3 jug.)</h3>
+    <p>• <span class="pos">1°</span> neto = <strong>4 pts</strong> · <span class="pos">2°</span> = <strong>2 pts</strong> · <span class="neg">3°</span> = <strong>0 pts</strong>.<br>
+    • Empate 1°/2° → 3 pts c/u.<br>
+    • Triple empate → 0 pts c/u. HCP al 85%.</p>
+
+    <button class="btn-close-manual" onclick="closeManual()">✕ &nbsp;Cerrar</button>
+  </div>
 </div>
 
 <!-- ── MODAL MODALIDAD (solo para 4 jugadores) ── -->
@@ -430,6 +522,16 @@ function saveCourse() {
   setTimeout(() => { toast.style.display = 'none'; }, 2000);
 }
 
+function resetCourse() {
+  const name = document.getElementById('csel').value;
+  localStorage.removeItem('hcp_' + name);
+  populateHcpTable();
+  const toast = document.getElementById('save-toast');
+  toast.textContent = '↩ Restablecido';
+  toast.style.display = 'block';
+  setTimeout(() => { toast.style.display = 'none'; toast.textContent = '✅ Guardado'; }, 2000);
+}
+
 // ─── Poblar tabla de Hcp por hoyo ──────────────────────────────────────────
 function populateHcpTable() {
   const name = document.getElementById('csel').value;
@@ -517,6 +619,10 @@ function startGame() {
   document.getElementById('scorecard').style.display = 'block';
   saveState();
 }
+
+// ─── Manual ────────────────────────────────────────────────────────────────
+function openManual()  { document.getElementById('manual-modal').classList.add('open'); window.scrollTo(0,0); }
+function closeManual() { document.getElementById('manual-modal').classList.remove('open'); }
 
 // ─── Selección de modalidad (4 jugadores) ──────────────────────────────────
 function selectMode(mode) {
@@ -773,13 +879,11 @@ function recalcTeam() {
   if (!any) { dA.textContent='—'; dB.textContent='—'; }
   else if (totA===totB) { dA.textContent='EMPATE'; dB.textContent='EMPATE'; }
   else if (totA>totB) {
-    const d=totA-totB;
-    dA.textContent=`+${d}`; dA.className+=' tc-2';
-    dB.textContent=`-${d}`; dB.className+=' tc-0';
+    dA.textContent=`+${totA-totB}`; dA.className+=' tc-2';
+    dB.textContent=''; dB.className+=' tc-0';
   } else {
-    const d=totB-totA;
-    dA.textContent=`-${d}`; dA.className+=' tc-0';
-    dB.textContent=`+${d}`; dB.className+=' tc-2';
+    dA.textContent=''; dA.className+=' tc-0';
+    dB.textContent=`+${totB-totA}`; dB.className+=' tc-2';
   }
 }
 
@@ -977,9 +1081,9 @@ function recalcBestBall() {
     setTd('bb_a_dif','EMPATE'); setTd('bb_b_dif','EMPATE');
   } else if (totA>totB) {
     setTd('bb_a_dif',`+${totA-totB}`,'tc-2');
-    setTd('bb_b_dif',`-${totA-totB}`,'tc-0');
+    setTd('bb_b_dif','','tc-0');
   } else {
-    setTd('bb_a_dif',`-${totB-totA}`,'tc-0');
+    setTd('bb_a_dif','','tc-0');
     setTd('bb_b_dif',`+${totB-totA}`,'tc-2');
   }
 }
