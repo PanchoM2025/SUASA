@@ -8,12 +8,10 @@
 <meta http-equiv="Expires" content="0">
 <title>S.U.A.S.A.</title>
 <link rel="manifest" href="/manifest.json">
-<link rel="icon" href="/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/icon.svg">
-<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SUASA">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <script>
 // ── Service Worker (PWA sin badge de Chrome) ────────────────────────────────
 if ('serviceWorker' in navigator) {
@@ -21,7 +19,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20260811-003";
+const VERSION = "20260812-008";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -41,6 +39,15 @@ const VERSION = "20260811-003";
   document.addEventListener('DOMContentLoaded', function() {
     document.title = 'S.U.A.S.A.';
     document.getElementById('main-title').textContent = 'S.U.A.S.A.';
+    const canvas = document.createElement('canvas');
+    canvas.width = 192; canvas.height = 192;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#1a472a';
+    ctx.beginPath(); ctx.roundRect(0,0,192,192,32); ctx.fill();
+    ctx.font = '120px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('⛳', 96, 100);
+    const lnk = document.createElement('link'); lnk.rel = 'apple-touch-icon'; lnk.href = canvas.toDataURL('image/png'); document.head.appendChild(lnk);
+    const fav = document.createElement('link'); fav.rel = 'icon'; fav.href = canvas.toDataURL('image/png'); document.head.appendChild(fav);
   });
 </script>
 <style>
@@ -67,7 +74,7 @@ select {
 input.ini { width:80px; text-transform:uppercase; }
 input.hcp-in { width:70px; }
 
-/* ── VERIFICACION HCP HOYOS ── */
+/* ── VERIFICACIÓN HCP HOYOS ── */
 .hcp-verify-label {
   color:#ffd700; font-size:14px; font-weight:bold;
   text-align:center; margin:4px 0 10px; letter-spacing:.5px;
@@ -91,138 +98,62 @@ input.hv {
 }
 input.hv:focus { outline:2px solid #ffd700; }
 
-.btn-hcp-row {
-  display:flex; gap:8px; margin-bottom:12px;
-}
 .btn-save {
-  flex:1; padding:9px 8px; background:#1a3a6a; color:#87ceeb;
-  font-size:13px; font-weight:bold; border:none; border-radius:8px;
-  cursor:pointer; touch-action:manipulation;
-  -webkit-user-select:none; user-select:none;
+  width:100%; padding:11px; background:#1a3a6a; color:#87ceeb;
+  font-size:15px; font-weight:bold; border:none; border-radius:8px;
+  cursor:pointer; letter-spacing:.5px; touch-action:manipulation;
+  -webkit-user-select:none; user-select:none; margin-bottom:12px;
 }
 .btn-save:active { background:#254d8a; }
-.btn-reset {
-  flex:1; padding:9px 8px; background:#3a1a1a; color:#f08080;
-  font-size:13px; font-weight:bold; border:none; border-radius:8px;
-  cursor:pointer; touch-action:manipulation;
-  -webkit-user-select:none; user-select:none;
-}
-.btn-reset:active { background:#5a2a2a; }
 #save-toast {
   display:none; text-align:center; color:#90ee90;
   font-size:13px; font-weight:bold; margin:-8px 0 10px;
 }
 
 .btn-start {
-  padding:16px 22px; background:#2d6a2d; color:#ffd700;
+  width:100%; padding:16px; background:#2d6a2d; color:#ffd700;
   font-size:18px; font-weight:bold; border:none; border-radius:8px;
-  cursor:pointer; letter-spacing:1px; touch-action:manipulation;
-  -webkit-user-select:none; user-select:none; white-space:nowrap;
+  cursor:pointer; letter-spacing:1px; touch-action:manipulation; -webkit-user-select:none; user-select:none;
 }
 .btn-start:active { background:#3d8a3d; }
 
-/* ── FILA INFERIOR: INSTRUCCIONES + COMENZAR ── */
-.btn-bottom-row {
-  display:flex; gap:8px; align-items:stretch;
-}
-.btn-instrucciones {
-  flex:1; padding:9px 8px; background:#1a3a5a; color:#87ceeb;
-  font-size:13px; font-weight:bold; border:none; border-radius:8px;
-  cursor:pointer; touch-action:manipulation;
-  -webkit-user-select:none; user-select:none;
-}
-.btn-instrucciones:active { background:#254d7a; }
-
-/* ── MODAL INSTRUCCIONES ── */
-#modal-instrucciones {
-  display:none; position:fixed; inset:0; z-index:1000;
-  background:rgba(0,0,0,0.80);
-  justify-content:center; align-items:center;
-  padding:16px;
-}
-#modal-instrucciones.open { display:flex; }
-.modal-box {
-  background:#0d3318; border:1px solid #3d8a3d; border-radius:12px;
-  padding:22px 18px; max-width:420px; width:100%;
-  max-height:calc(100vh - 48px);
-  overflow-y:auto; -webkit-overflow-scrolling:touch;
-}
-.modal-box h2 {
-  color:#ffd700; font-size:17px; text-align:center;
-  margin-bottom:16px; letter-spacing:.5px;
-}
-.modal-box p {
-  color:#d8f0d8; font-size:14px; line-height:1.65; margin-bottom:10px;
-}
-.modal-box .m-bullet {
-  color:#d8f0d8; font-size:14px; line-height:1.65;
-  margin:0 0 6px 8px; display:flex; gap:6px;
-}
-.modal-box .m-bullet span { flex-shrink:0; }
-.modal-box .m-mod {
-  color:#ffd700; font-size:13px; font-weight:bold;
-  margin:10px 0 3px; padding-left:4px;
-}
-.modal-box .m-mod-desc {
-  color:#a8d8a8; font-size:13px; line-height:1.6; margin-bottom:4px; padding-left:8px;
-}
-.modal-close {
-  display:block; margin:18px auto 0; padding:10px 32px;
-  background:#2d6a2d; color:#fff; font-size:15px; font-weight:bold;
-  border:none; border-radius:8px; cursor:pointer; touch-action:manipulation;
-}
-.modal-close:active { background:#3d8a3d; }
-
-/* ── NUEVA CANCHA ── */
-#nc-overlay { display:none; position:fixed; inset:0; z-index:500; background:rgba(0,0,0,0.88); overflow-y:auto; padding:16px; -webkit-overflow-scrolling:touch; }
-#nc-overlay.open { display:block; }
-.nc-box { background:#0d3318; border:1px solid #3d8a3d; border-radius:12px; padding:20px 16px; max-width:420px; width:100%; margin:0 auto; }
-.nc-box h3 { color:#ffd700; font-size:16px; text-align:center; margin-bottom:14px; letter-spacing:.5px; }
-.nc-field { margin-bottom:12px; }
-.nc-field label { color:#a8d8a8; font-size:13px; display:block; margin-bottom:5px; font-weight:bold; }
-.nc-field input { width:100%; background:#e8f5e9; color:#1a3a1a; border:none; border-radius:6px; padding:9px 10px; font-size:15px; -webkit-appearance:none; appearance:none; }
-.nc-holes-hdr { display:grid; grid-template-columns:1fr 1fr; gap:0 12px; margin-bottom:3px; }
-.nc-holes-hdr-col { display:grid; grid-template-columns:38px 46px 46px; gap:4px; }
-.nc-holes-hdr-col span { color:#ffd700; font-size:11px; font-weight:bold; text-align:center; }
-.nc-holes-hdr-col span:first-child { text-align:left; }
-.nc-holes-grid { display:grid; grid-template-columns:1fr 1fr; gap:3px 12px; margin-bottom:10px; }
-.nc-hole { display:grid; grid-template-columns:38px 46px 46px; align-items:center; gap:4px; }
-.nc-hole-lbl { color:#a8d8a8; font-size:12px; font-weight:bold; }
-.nc-hole input { background:#e8f5e9; color:#1a3a1a; border:none; border-radius:4px; padding:5px 0; font-size:14px; font-weight:bold; text-align:center; width:100%; -webkit-appearance:none; appearance:none; -moz-appearance:textfield; }
-.nc-hole input::-webkit-inner-spin-button, .nc-hole input::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
-.nc-toast { text-align:center; font-size:13px; font-weight:bold; min-height:28px; padding:4px 0; }
-.nc-btn-row { display:flex; gap:8px; margin-top:8px; }
-.nc-btn-ok { flex:2; padding:12px; background:#2d6a2d; color:#ffd700; font-size:15px; font-weight:bold; border:none; border-radius:8px; cursor:pointer; touch-action:manipulation; }
-.nc-btn-ok:active { background:#3d8a3d; }
-.nc-btn-cancel { flex:1; padding:12px; background:#3a1a1a; color:#f08080; font-size:14px; font-weight:bold; border:none; border-radius:8px; cursor:pointer; touch-action:manipulation; }
-.nc-btn-cancel:active { background:#5a2a2a; }
+/* ── MODAL MODALIDAD ── */
+.mode-modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.80); z-index:100; align-items:center; justify-content:center; }
+.mode-modal-bg.open { display:flex; }
+.mode-modal-box { background:#0d3318; border:2px solid #3d8a3d; border-radius:14px; padding:30px 22px; width:88%; max-width:320px; text-align:center; }
+.mode-modal-box h3 { color:#ffd700; font-size:16px; margin-bottom:22px; line-height:1.5; }
+.btn-mode { display:block; width:100%; padding:16px 12px; margin-bottom:14px; font-size:14px; font-weight:bold; border:none; border-radius:8px; cursor:pointer; touch-action:manipulation; line-height:1.4; }
+.btn-mode:last-child { margin-bottom:0; }
+.btn-mode-1 { background:#2d6a2d; color:#ffd700; }
+.btn-mode-1:active { background:#3d8a3d; }
+.btn-mode-2 { background:#1a3a6a; color:#87ceeb; }
+.btn-mode-2:active { background:#254d8a; }
 
 /* ── SCORECARD ── */
 #scorecard { display:none; padding:14px 10px 30px; }
 #sc-title { font-size:15px; color:#ffd700; text-align:center; margin-bottom:12px; letter-spacing:.5px; }
 .sc-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
-table.sc { border-collapse:collapse; min-width:100%; font-size:15px; table-layout:fixed; }
-table.sc th { background:#0d3318; color:#a8d8a8; padding:6px 2px; text-align:center; font-size:16px; white-space:nowrap; }
+table.sc { border-collapse:collapse; min-width:100%; font-size:13px; table-layout:fixed; }
+table.sc th { background:#0d3318; color:#a8d8a8; padding:6px 2px; text-align:center; font-size:11px; white-space:nowrap; }
 table.sc td { padding:4px 2px; text-align:center; white-space:nowrap; }
-table.sc th.c-fix, table.sc td.c-fix { width:26px; max-width:26px; font-size:16px; }
+table.sc th.c-fix, table.sc td.c-fix { width:26px; max-width:26px; font-size:11px; }
 table.sc th.c-player, table.sc td.c-player { width:50px; }
 table.sc th.c-team,   table.sc td.c-team   { width:72px; }
 table.sc th.c-p420,   table.sc td.c-p420   { width:62px; }
-table.sc th.c-match,  table.sc td.c-match  { width:80px; }
 table.sc td.lbl { text-align:left; padding-left:10px; font-weight:bold; }
 
 tr.r-even  td { background:#245c38; }
 tr.r-odd   td { background:#1a472a; }
 tr.r-sub   td { background:#0a2a14; color:#ffd700; font-weight:bold; }
-tr.r-total td { background:#0d3318; color:#ffd700; font-weight:bold; font-size:16px; border-top:2px solid #3d8a3d; }
-tr.r-stbl  td { background:#072b18; color:#90ee90; font-weight:bold; font-size:15px; }
-tr.r-aag   td { background:#072b18; color:#87ceeb; font-weight:bold; font-size:15px; }
-tr.r-diff  td { background:#051a0e; color:#ffd700; font-weight:bold; font-size:16px; border-top:2px solid #ffd700; }
+tr.r-total td { background:#0d3318; color:#ffd700; font-weight:bold; font-size:14px; border-top:2px solid #3d8a3d; }
+tr.r-stbl  td { background:#072b18; color:#90ee90; font-weight:bold; font-size:13px; }
+tr.r-aag   td { background:#072b18; color:#87ceeb; font-weight:bold; font-size:13px; }
+tr.r-diff  td { background:#051a0e; color:#ffd700; font-weight:bold; font-size:14px; border-top:2px solid #ffd700; }
 
 /* score input */
 input.g {
   width:44px; text-align:center; background:#e8f5e9; color:#1a3a1a;
-  border:none; border-radius:3px; padding:5px 0; font-size:18px; font-weight:bold;
+  border:none; border-radius:3px; padding:5px 0; font-size:16px; font-weight:bold;
   -webkit-appearance:none; appearance:none; touch-action:manipulation; transition:background .2s;
 }
 input.g:focus { outline:2px solid #ffd700; }
@@ -230,28 +161,34 @@ input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
 input[type="number"] { -moz-appearance:textfield; }
 
-/* ── COLORES EQUIPO ── */
-td.tc-3 { background:#b85c00 !important; color:#fff    !important; font-weight:bold; font-size:17px; }
-td.tc-2 { background:#8a7200 !important; color:#ffd700 !important; font-weight:bold; font-size:17px; }
-td.tc-1 { background:#1e5c2e !important; color:#90ee90 !important; font-weight:bold; font-size:17px; }
+/* ── COLORES EQUIPO (A la 1° y 2° mejores) ── */
+td.tc-3 { background:#b85c00 !important; color:#fff    !important; font-weight:bold; font-size:15px; }
+td.tc-2 { background:#8a7200 !important; color:#ffd700 !important; font-weight:bold; font-size:15px; }
+td.tc-1 { background:#1e5c2e !important; color:#90ee90 !important; font-weight:bold; font-size:15px; }
 td.tc-0 { color:#aaa !important; }
 
 /* ── COLORES 4-2-0 ── */
-td.fc-4 { background:#7a5f00 !important; color:#ffd700 !important; font-weight:bold; font-size:17px; }
-td.fc-3 { background:#5a4600 !important; color:#c8a500 !important; font-weight:bold; font-size:16px; }
-td.fc-2 { background:#1a5c30 !important; color:#90ee90 !important; font-weight:bold; font-size:17px; }
-td.fc-1 { background:#143d22 !important; color:#c8e6c9 !important; font-weight:bold; font-size:16px; }
+td.fc-4 { background:#7a5f00 !important; color:#ffd700 !important; font-weight:bold; font-size:15px; }
+td.fc-3 { background:#5a4600 !important; color:#c8a500 !important; font-weight:bold; font-size:14px; }
+td.fc-2 { background:#1a5c30 !important; color:#90ee90 !important; font-weight:bold; font-size:15px; }
+td.fc-1 { background:#143d22 !important; color:#c8e6c9 !important; font-weight:bold; font-size:14px; }
 td.fc-0 { color:#aaa !important; }
 
-/* ── COLORES MATCH ── */
-td.mc-win  { background:#1a5c30 !important; color:#90ee90 !important; font-weight:bold; font-size:17px; }
-td.mc-tie  { background:#2a2a0a !important; color:#c8c870 !important; font-weight:bold; font-size:15px; }
-td.mc-lose { color:#555 !important; }
-
-.sec-sep { margin-top:24px; padding-top:16px; border-top:2px solid #3d8a3d; }
-.sec-title { font-size:15px; font-weight:bold; text-align:center; margin-bottom:4px; letter-spacing:1px; }
-.sec-sub { font-size:11px; color:#a8d8a8; text-align:center; margin-bottom:10px; }
-.sec-legend { font-size:10px; color:#666; text-align:center; margin-top:6px; }
+/* separador de secciones */
+.sec-sep {
+  margin-top:24px; padding-top:16px;
+  border-top:2px solid #3d8a3d;
+}
+.sec-title {
+  font-size:15px; font-weight:bold; text-align:center;
+  margin-bottom:4px; letter-spacing:1px;
+}
+.sec-sub {
+  font-size:11px; color:#a8d8a8; text-align:center; margin-bottom:10px;
+}
+.sec-legend {
+  font-size:10px; color:#666; text-align:center; margin-top:6px;
+}
 
 .btn-new {
   display:block; margin:18px auto 0; padding:12px 32px;
@@ -269,76 +206,31 @@ td.mc-lose { color:#555 !important; }
   <h1 id="main-title">S.U.A.S.A.</h1>
   <div class="field-row">
     <label for="csel">Cancha:</label>
-    <select id="csel" onchange="onCselChange()"></select>
+    <select id="csel" onchange="populateHcpTable()"></select>
   </div>
   <table class="player-tbl">
     <thead><tr><th>Jugador</th><th>Iniciales</th><th>HCP</th></tr></thead>
     <tbody id="prows"></tbody>
   </table>
 
+  <!-- Verificación HCP hoyos -->
   <p class="hcp-verify-label">Verifique los Hcp de los Hoyos</p>
   <div class="hcp-verify-wrap">
     <table class="hcp-vtbl">
       <thead>
-        <tr><th>Hoyo</th><th>Hcp</th><th class="sep"></th><th>Hoyo</th><th>Hcp</th></tr>
+        <tr>
+          <th>Hoyo</th><th>Hcp</th>
+          <th class="sep"></th>
+          <th>Hoyo</th><th>Hcp</th>
+        </tr>
       </thead>
       <tbody id="hcp-rows"></tbody>
     </table>
   </div>
 
-  <div class="btn-hcp-row">
-    <button class="btn-save" onclick="saveCourse()">&#x1F4BE; Guardar Hcp</button>
-    <button class="btn-reset" onclick="resetCourse()">&#x21A9; Restablecer Hcp</button>
-  </div>
-  <div id="save-toast">&#x2705; Guardado</div>
-  <div class="btn-bottom-row">
-    <button class="btn-instrucciones" onclick="openInstructions()">&#x1F4CB; Instrucciones</button>
-    <button class="btn-start" onclick="startGame()">COMENZAR &nbsp;&#9658;</button>
-  </div>
-</div>
-
-<!-- ── NUEVA CANCHA ── -->
-<div id="nc-overlay">
-  <div class="nc-box">
-    <h3>&#x2795; Nueva Cancha</h3>
-    <div class="nc-field">
-      <label>Nombre de la cancha</label>
-      <input id="nc-nombre" type="text" placeholder="Club de Golf..." autocorrect="off" autocapitalize="words">
-    </div>
-    <div class="nc-field">
-      <label>Ubicaci&#xF3;n (opcional)</label>
-      <input id="nc-ubicacion" type="text" placeholder="Ciudad, provincia" autocorrect="off">
-    </div>
-    <div class="nc-holes-hdr">
-      <div class="nc-holes-hdr-col"><span>Hoyo</span><span>Par</span><span>Hcp</span></div>
-      <div class="nc-holes-hdr-col"><span>Hoyo</span><span>Par</span><span>Hcp</span></div>
-    </div>
-    <div class="nc-holes-grid" id="nc-holes-grid"></div>
-    <div id="nc-toast" class="nc-toast"></div>
-    <div class="nc-btn-row">
-      <button class="nc-btn-ok" onclick="guardarNuevaCancha()">&#x2713; Guardar y jugar</button>
-      <button class="nc-btn-cancel" onclick="cerrarNuevaCancha()">&#x2715; Cancelar</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── MODAL INSTRUCCIONES ── -->
-<div id="modal-instrucciones" onclick="if(event.target===this)closeInstructions()">
-  <div class="modal-box">
-    <h2>&#x1F4CB; Instrucciones</h2>
-    <p>En esta 1&#xB0; pantalla usted puede:</p>
-    <div class="m-bullet"><span>•</span><span>Seleccionar la cancha que va a jugar<br><span style="padding-left:4px">(si no est&#xE1; en el listado, la puede crear).</span></span></div>
-    <div class="m-bullet"><span>•</span><span>Cuatro filas para ingresar las iniciales<br><span style="padding-left:4px">y el Hcp de juego de cada jugador.</span></span></div>
-    <div class="m-bullet"><span>•</span><span>Una tabla con los Hcp de c/hoyo de la<br><span style="padding-left:4px">cancha seleccionada. Los que pueden</span><br><span style="padding-left:4px">modificarse y guardar antes de continuar.</span></span></div>
-    <p style="margin-top:12px;font-size:13px">Seg&#xFA;n la cantidad de jugadores, la siguiente pantalla &mdash; adem&#xE1;s del score &mdash; muestra el Stableford (HCP 100%) y el AAG (Double Bogey Neto), y ofrece:</p>
-    <div class="m-mod">&#x1F3C6; Con 4 jugadores:</div>
-    <div class="m-mod-desc">&#x201C;1&#xB0; y 2&#xB0; mejores pelotas&#x201D; (HCP 85%)<br>2 ptos la 1&#xB0; mejor &middot; 1 pto la 2&#xB0; mejor.</div>
-    <div class="m-mod">&#x26A1; Con 3 jugadores:</div>
-    <div class="m-mod-desc">&#x201C;4-2-0&#x201D; &mdash; 4 ptos mejor pelota<br>del hoyo &middot; 2 ptos la segunda.</div>
-    <div class="m-mod">&#x1F94A; Con 2 jugadores:</div>
-    <div class="m-mod-desc">Match &mdash; 1 pto por cada hoyo ganado.</div>
-    <button class="modal-close" onclick="closeInstructions()">Cerrar</button>
-  </div>
+  <button class="btn-save" onclick="saveCourse()">💾 &nbsp;Guardar Hcp de esta Cancha</button>
+  <div id="save-toast">✅ Guardado</div>
+  <button class="btn-start" onclick="startGame()">COMENZAR &nbsp;▶</button>
 </div>
 
 <!-- ── SCORECARD ── -->
@@ -348,47 +240,57 @@ td.mc-lose { color:#555 !important; }
     <table class="sc" id="sc-tbl"></table>
   </div>
 
-  <!-- A LA 1° Y 2° MEJORES (4 jugadores) -->
+  <!-- A LA 1° Y 2° MEJORES  (4 jugadores) -->
   <div id="team-section" style="display:none" class="sec-sep">
-    <p class="sec-title" style="color:#ffd700">&#x1F3C6; A LA 1&#xBA; Y 2&#xBA; MEJORES</p>
+    <p class="sec-title" style="color:#ffd700">🏆 A LA 1° Y 2° MEJORES</p>
     <p class="sec-sub" id="team-sub"></p>
     <div class="sc-wrap">
       <table class="sc" id="team-tbl"></table>
     </div>
-    <p class="sec-legend">1&#xBA; neto unico = 2 pts &nbsp;&middot;&nbsp; 2&#xBA; neto unico = 1 pt &nbsp;&middot;&nbsp; Empate = 0 pts &nbsp;|&nbsp; HCP 85%</p>
-    <p class="sec-legend" style="margin-top:4px">&middot; Los puntos se calculan hoyo por hoyo cuando los 4 jugadores tienen score &middot;</p>
+    <p class="sec-legend">1° neto único = 2 pts &nbsp;·&nbsp; 2° neto único = 1 pt &nbsp;·&nbsp; Empate = 0 pts &nbsp;|&nbsp; HCP 85%</p>
+    <p class="sec-legend" style="margin-top:4px">· Los puntos se calculan hoyo por hoyo cuando los 4 jugadores tienen score ·</p>
   </div>
 
-  <!-- MATCH (2 jugadores) -->
-  <div id="section-match" style="display:none" class="sec-sep">
-    <p class="sec-title" style="color:#90ee90">&#x1F94A; MATCH</p>
-    <p class="sec-sub" id="sub-match"></p>
+  <!-- MEJOR PELOTA DE EQUIPO (4 jugadores, modalidad 2) -->
+  <div id="bestball-section" style="display:none" class="sec-sep">
+    <p class="sec-title" style="color:#90ee90">⛳ MEJOR PELOTA DE EQUIPO</p>
+    <p class="sec-sub" id="bestball-sub"></p>
     <div class="sc-wrap">
-      <table class="sc" id="tbl-match"></table>
+      <table class="sc" id="bestball-tbl"></table>
     </div>
-    <p class="sec-legend">Menor neto gana el hoyo = 1 pt &nbsp;&middot;&nbsp; Empate = 0 pts &nbsp;|&nbsp; HCP 85%</p>
+    <p class="sec-legend">1 punto por hoyo ganado · 0 puntos por empate · HCP 85%</p>
   </div>
 
-  <!-- 4 - 2 - 0 (3 jugadores) -->
+  <!-- 4 - 2 - 0  (3 jugadores) -->
   <div id="section420" style="display:none" class="sec-sep">
-    <p class="sec-title" style="color:#87ceeb">&#x26A1; 4 &mdash; 2 &mdash; 0</p>
+    <p class="sec-title" style="color:#87ceeb">⚡ 4 — 2 — 0</p>
     <p class="sec-sub" id="sub420"></p>
     <div class="sc-wrap">
       <table class="sc" id="tbl420"></table>
     </div>
-    <p class="sec-legend">1&#xBA; = 4 pts &middot; 2&#xBA; = 2 pts &middot; 3&#xBA; = 0 &nbsp;|&nbsp; Empate 1&#xBA;/2&#xBA; &rarr; reparten (3 c/u) &nbsp;|&nbsp; HCP 85%</p>
+    <p class="sec-legend">1° = 4 pts · 2° = 2 pts · 3° = 0 &nbsp;|&nbsp; Empate 1°/2° → reparten (3 c/u) &nbsp;|&nbsp; HCP 85%</p>
   </div>
 
-  <button class="btn-new" onclick="newGame()">&#x21A9; &nbsp;Nueva Partida</button>
+  <button class="btn-new" onclick="newGame()">↩ &nbsp;Nueva Partida</button>
+</div>
+
+<!-- ── MODAL MODALIDAD (solo para 4 jugadores) ── -->
+<div class="mode-modal-bg" id="mode-modal">
+  <div class="mode-modal-box">
+    <h3>Seleccione la modalidad de juego</h3>
+    <button class="btn-mode btn-mode-1" onclick="selectMode('12best')">A la 1° y 2° mejor pelota</button>
+    <button class="btn-mode btn-mode-2" onclick="selectMode('1best')">A la mejor pelota de c/equipo</button>
+  </div>
 </div>
 
 <script>
+// ─── Canchas ───────────────────────────────────────────────────────────────
 const COURSES = {
   "CNSI": [
     [4, 3],[3,15],[4,17],[4, 9],[4, 5],[5, 1],[4, 7],[3,13],[4,11],
     [4,14],[4, 6],[5,10],[4,12],[3,2],[5, 8],[4, 4],[3,18],[4,16]
   ],
-  "Pilara": [
+  "Pilará": [
     [5, 3],[3,13],[4, 5],[4,11],[4,15],[4, 9],[5, 1],[3,17],[4, 7],
     [4,12],[3,18],[4, 6],[3,14],[5, 2],[4,16],[4,10],[4, 8],[5, 4]
   ],
@@ -420,11 +322,11 @@ const COURSES = {
     [4, 5],[4,11],[3,17],[5, 9],[4,13],[4, 7],[4, 1],[3,15],[4, 3],
     [5, 4],[5,12],[3,18],[4, 2],[4, 6],[5,10],[4, 8],[3,16],[4,14]
   ],
-  "CUBA Fatima": [
+  "CUBA Fátima": [
     [5, 5],[3,15],[4, 1],[5,11],[4, 9],[4, 7],[3,17],[4, 3],[4,13],
     [4,12],[5, 6],[4, 4],[4, 8],[3,16],[4, 2],[4,10],[3,18],[5,14]
   ],
-  "Pinguinos": [
+  "Pingüinos": [
     [4, 7],[5, 3],[3,17],[4,11],[4, 5],[3,15],[4, 9],[5, 1],[4,13],
     [4,10],[5, 4],[3,18],[4,14],[3,16],[4,8],[5, 2],[3,12],[5,6]
   ],
@@ -432,12 +334,13 @@ const COURSES = {
     [4, 5],[4, 3],[4,13],[5,17],[3,15],[4, 7],[3, 9],[4,11],[5, 1],
     [4, 6],[4, 4],[5,16],[3,10],[4, 2],[4,12],[4, 8],[3,14],[5,18]
   ],
-  "Cumelen": [
+  "Cumelén": [
     [4, 5],[3, 9],[4, 7],[3,17],[4, 3],[5, 1],[4,15],[4,11],[3,13],
     [4, 6],[3,10],[4, 8],[3,18],[4, 4],[5, 2],[4,16],[4,12],[3,14]
   ],
 };
 
+// ─── Fórmulas ──────────────────────────────────────────────────────────────
 function strokes(hcp, hcpH) {
   return Math.floor(hcp/18) + (hcp%18 >= hcpH ? 1 : 0);
 }
@@ -447,14 +350,18 @@ function puntos(g, par, hcp, hcpH) {
 function aag(g, par, hcp, hcpH) {
   return Math.min(g, par + strokes(hcp,hcpH) + 2);
 }
-function hcp85(hcp) { return Math.round(hcp * 0.85); }
+function hcp85(hcp)           { return Math.round(hcp * 0.85); }
 function strokesTeam(hcp, hcpH) {
   const h = hcp85(hcp);
   return Math.floor(h/18) + (h%18 >= hcpH ? 1 : 0);
 }
 
-let players = [];
-let course  = [];
+// ─── Estado ────────────────────────────────────────────────────────────────
+let players  = [];
+let course   = [];
+let gameMode = '12best'; // '12best' | '1best'
+
+// ─── Persistencia localStorage ─────────────────────────────────────────────
 const STATE_KEY = 'suasa_state_v1';
 
 function saveState() {
@@ -466,53 +373,49 @@ function saveState() {
       if (el && el.value.trim() !== '') scores[`${j}_${h}`] = el.value.trim();
     }
   });
-  try { localStorage.setItem(STATE_KEY, JSON.stringify({
+  const state = {
     courseName: document.getElementById('sc-title').textContent,
-    players, course, scores
-  })); } catch(e) {}
+    players,
+    course,
+    scores,
+    gameMode
+  };
+  try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch(e) {}
 }
 
 function restoreState() {
   let saved;
   try { saved = JSON.parse(localStorage.getItem(STATE_KEY)); } catch(e) { return false; }
   if (!saved || !saved.players || !saved.course) return false;
-  players = saved.players;
-  const courseKey = (saved.courseName || '').replace(/\s*[-—–].*$/, '').trim();
-  if (courseKey && COURSES[courseKey]) {
-    const base = COURSES[courseKey];
-    const savedHcps = JSON.parse(localStorage.getItem('hcp_' + courseKey) || 'null');
-    course = base.map(([par], h) => [par, (savedHcps && savedHcps[h] != null) ? savedHcps[h] : base[h][1]]);
-  } else {
-    course = saved.course;
-  }
+
+  players  = saved.players;
+  course   = saved.course;
+  gameMode = saved.gameMode || '12best';
+
   document.getElementById('sc-title').textContent = saved.courseName || '';
   buildScorecard();
-  document.getElementById('team-section').style.display   = 'none';
-  document.getElementById('section420').style.display     = 'none';
-  document.getElementById('section-match').style.display  = 'none';
-  if (players.length === 4) buildTeamSection();
+  document.getElementById('team-section').style.display     = 'none';
+  document.getElementById('bestball-section').style.display = 'none';
+  document.getElementById('section420').style.display       = 'none';
+  if (players.length === 4) {
+    if (gameMode === '12best') buildTeamSection();
+    else buildBestBallSection();
+  }
   if (players.length === 3) build420Section();
-  if (players.length === 2) buildMatchSection();
+
+  // Restaurar scores
   Object.entries(saved.scores || {}).forEach(([key, val]) => {
     const el = document.getElementById(`g${key}`);
     if (el) el.value = val;
   });
   recalcAll();
+
   document.getElementById('setup').style.display = 'none';
   document.getElementById('scorecard').style.display = 'block';
   return true;
 }
 
-function resetCourse() {
-  const name = document.getElementById('csel').value;
-  localStorage.removeItem('hcp_' + name);
-  populateHcpTable();
-  const toast = document.getElementById('save-toast');
-  toast.textContent = 'Restablecido';
-  toast.style.display = 'block';
-  setTimeout(() => { toast.style.display = 'none'; toast.textContent = '&#x2705; Guardado'; }, 2000);
-}
-
+// ─── Guardar cancha (localStorage) ────────────────────────────────────────
 function saveCourse() {
   const name = document.getElementById('csel').value;
   const hcps = [];
@@ -527,6 +430,7 @@ function saveCourse() {
   setTimeout(() => { toast.style.display = 'none'; }, 2000);
 }
 
+// ─── Poblar tabla de Hcp por hoyo ──────────────────────────────────────────
 function populateHcpTable() {
   const name = document.getElementById('csel').value;
   const data = COURSES[name];
@@ -547,71 +451,92 @@ function populateHcpTable() {
   }
 }
 
+// ─── Init setup ────────────────────────────────────────────────────────────
 (function() {
-  // Cargar canchas personalizadas guardadas
-  const customSaved = JSON.parse(localStorage.getItem('custom_courses_suasa') || '[]');
-  customSaved.forEach(c => { if (!COURSES[c.name]) COURSES[c.name] = c.data; });
-
   const sel = document.getElementById('csel');
   Object.keys(COURSES).forEach(name => {
     const o = document.createElement('option');
     o.value = o.textContent = name;
     sel.appendChild(o);
   });
-  // Opción "Cancha nueva" al final
-  const oNew = document.createElement('option');
-  oNew.value = '__nueva__'; oNew.textContent = '➕ Cancha nueva…';
-  sel.appendChild(oNew);
+
+  // ── Cambio 6: valores por defecto + foco limpia el campo ──────────────────
+  const defaultIni = ['E', 'J', 'AB', ''];
   const tbody = document.getElementById('prows');
   for (let i = 0; i < 4; i++) {
     const tr = document.createElement('tr');
     tr.innerHTML =
       `<td>Jugador ${i+1}</td>` +
-      `<td><input class="ini" type="text" id="ini${i}" maxlength="7" autocorrect="off" autocapitalize="characters"></td>` +
-      `<td><input class="hcp-in" type="number" id="hcp${i}" placeholder="0" min="0" max="54" inputmode="numeric"></td>`;
+      `<td><input class="ini" type="text" id="ini${i}" maxlength="7"
+         value="${defaultIni[i]}" autocorrect="off" autocapitalize="characters"
+         onfocus="this.select()"></td>` +
+      `<td><input class="hcp-in" type="number" id="hcp${i}" value="0" min="0" max="54"
+         inputmode="numeric" onfocus="this.select()"></td>`;
     tbody.appendChild(tr);
   }
+
   populateHcpTable();
+
+  // ── Cambio 5: intentar restaurar estado guardado ──────────────────────────
   restoreState();
 })();
 
+// ─── Comenzar ──────────────────────────────────────────────────────────────
 function startGame() {
   players = [];
   for (let i = 0; i < 4; i++) {
     const ini = document.getElementById(`ini${i}`).value.trim().toUpperCase();
     if (!ini) continue;
-    const hcpRaw = document.getElementById(`hcp${i}`).value.trim();
-    const hcp = hcpRaw === '' ? 0 : parseInt(hcpRaw);
-    if (isNaN(hcp)||hcp<0||hcp>54) { alert(`HCP invalido para jugador ${i+1}.`); return; }
+    const hcp = parseInt(document.getElementById(`hcp${i}`).value);
+    if (isNaN(hcp)||hcp<0||hcp>54) { alert(`HCP inválido para jugador ${i+1}.`); return; }
     players.push({ ini, hcp });
   }
-  if (!players.length) { alert('Ingresa iniciales de al menos 1 jugador.'); return; }
-  if (players.length > 4) { alert('Maximo 4 jugadores.'); return; }
+  if (!players.length) { alert('Ingresá las iniciales de al menos 1 jugador.'); return; }
+  if (players.length > 4) { alert('Máximo 4 jugadores.'); return; }
+
   const name = document.getElementById('csel').value;
   const base = COURSES[name];
   course = base.map(([par], h) => {
     const hv = parseInt(document.getElementById(`hv${h}`).value);
     return [par, isNaN(hv)||hv<1||hv>18 ? base[h][1] : hv];
   });
+
   document.getElementById('sc-title').textContent = name + '  —  S.U.A.S.A.';
   buildScorecard();
-  document.getElementById('team-section').style.display   = 'none';
-  document.getElementById('section420').style.display     = 'none';
-  document.getElementById('section-match').style.display  = 'none';
-  if (players.length === 4) buildTeamSection();
+  document.getElementById('team-section').style.display     = 'none';
+  document.getElementById('bestball-section').style.display = 'none';
+  document.getElementById('section420').style.display       = 'none';
+
+  if (players.length === 4) {
+    // Mostrar modal de selección de modalidad
+    document.getElementById('mode-modal').classList.add('open');
+    return; // la navegación la completa selectMode()
+  }
   if (players.length === 3) build420Section();
-  if (players.length === 2) buildMatchSection();
   document.getElementById('setup').style.display = 'none';
   document.getElementById('scorecard').style.display = 'block';
   saveState();
 }
 
+// ─── Selección de modalidad (4 jugadores) ──────────────────────────────────
+function selectMode(mode) {
+  gameMode = mode;
+  document.getElementById('mode-modal').classList.remove('open');
+  if (mode === '12best') buildTeamSection();
+  else                   buildBestBallSection();
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('scorecard').style.display = 'block';
+  saveState();
+}
+
+// ── Cambio 5: Nueva Partida limpia localStorage ────────────────────────────
 function newGame() {
   try { localStorage.removeItem(STATE_KEY); } catch(e) {}
   document.getElementById('scorecard').style.display = 'none';
   document.getElementById('setup').style.display = 'block';
 }
 
+// ─── Scorecard Stableford ──────────────────────────────────────────────────
 function buildScorecard() {
   const tbl = document.getElementById('sc-tbl');
   tbl.innerHTML = '';
@@ -633,12 +558,10 @@ function buildScorecard() {
       html += `<td class="c-player"><input class="g" type="text" id="g${j}_${h}" inputmode="numeric" pattern="[0-9xX]*" autocomplete="off"></td>`;
     });
     tr.innerHTML = html; tbody.appendChild(tr);
-    players.forEach((p,j) => {
+    players.forEach((_,j) => {
       const el = document.getElementById(`g${j}_${h}`);
-      const stk = strokesTeam(p.hcp, hcpH);
-      const [ibg,ifg] = strokeBg(stk);
-      el.style.background = ibg; el.style.color = ifg;
       el.addEventListener('input', function() {
+        // ── Cambio 2: convertir "0" automáticamente a "X" ──────────────────
         if (this.value === '0') this.value = 'X';
         else if (this.value.toLowerCase() === 'x') this.value = 'X';
         recalcAll();
@@ -657,47 +580,51 @@ function buildScorecard() {
     players.forEach((_,j) => html += `<td id="${mkId(j)}">—</td>`);
     tr.innerHTML = html; tbody.appendChild(tr);
   }
+
   for (let h=0; h<9; h++) addHole(h);
+  // ── Cambio 4: Ida / Vuelta ─────────────────────────────────────────────────
   addSubRow('Ida',    'r-sub', course.slice(0,9).reduce((s,[p])=>s+p,0), j=>`f9_${j}`);
   for (let h=9; h<18; h++) addHole(h);
   addSubRow('Vuelta', 'r-sub', course.slice(9).reduce((s,[p])=>s+p,0),  j=>`b9_${j}`);
   addSubRow('TOTAL',  'r-total', course.reduce((s,[p])=>s+p,0),          j=>`tot_${j}`);
   addResultRow('STABLEFORD','r-stbl', j=>`stbl_${j}`);
-  addResultRow('AAG',       'r-aag',  j=>`aag_${j}`);
+  addResultRow('AAG',        'r-aag',  j=>`aag_${j}`);
 }
 
-function strokeBg(stk) {
-  if (stk >= 2) return ['#42a5f5','#fff'];
-  if (stk === 1) return ['#b3e5fc','#1a3a1a'];
-  return ['#e8f5e9','#1a3a1a'];
-}
-
+// ── Cambio 3: nueva paleta de colores ─────────────────────────────────────
+// pts: Stableford points  |  isPickup: levantó pelota  |  netOverPar: neto vs par (positivo = sobre par)
 function scoreColor(pts, isPickup, netOverPar) {
-  if (isPickup)        return ['#CC4400','#fff'];
-  if (pts >= 4)        return ['#1565C0','#fff'];
-  if (pts === 3)       return ['#5BC8F5','#1a3a1a'];
-  if (pts === 2)       return ['#4CAF50','#fff'];
-  if (pts === 1)       return ['#FFD700','#1a3a1a'];
-  if (netOverPar === 2) return ['#FFA040','#1a3a1a'];
-  return ['#CC4400','#fff'];
+  if (isPickup)   return ['#CC4400','#fff'];     // X / Mayor: naranja oscuro
+  if (pts >= 4)   return ['#1565C0','#fff'];     // Eagle o mejor: azul
+  if (pts === 3)  return ['#5BC8F5','#1a3a1a']; // Birdie: celeste
+  if (pts === 2)  return ['#4CAF50','#fff'];     // Par: verde
+  if (pts === 1)  return ['#FFD700','#1a3a1a']; // Bogey: amarillo
+  if (netOverPar === 2) return ['#FFA040','#1a3a1a']; // Doble Bogey exacto: naranja claro
+  return ['#CC4400','#fff'];  // Triple bogey o peor: naranja oscuro
 }
 
 function recalcAll() {
   players.forEach((p, j) => {
     let f9g=0, b9g=0, totPts=0, totAAG=0;
-    let f9ok=false, b9ok=false, f9pickup=false, b9pickup=false;
+    let f9ok=false, b9ok=false;
+    let f9pickup=false, b9pickup=false;
+
     for (let h=0; h<18; h++) {
       const el = document.getElementById(`g${j}_${h}`);
       const raw = el ? el.value.trim() : '';
+
+      // ── Cambio 2: detectar pickup (X) ─────────────────────────────────────
       const isPickup = (raw === 'X');
       const g = parseInt(raw);
       if (!isPickup && (raw===''||isNaN(g)||g<=0)) {
-        if(el){ const [ibg,ifg]=strokeBg(strokesTeam(p.hcp,course[h][1])); el.style.background=ibg; el.style.color=ifg; }
+        if(el){ el.style.background='#e8f5e9'; el.style.color='#1a3a1a'; }
         continue;
       }
+
       const [par,hcpH] = course[h];
       const stk = strokes(p.hcp, hcpH);
       const np2 = par + stk + 2;
+
       let pts, holeAAG;
       if (isPickup) {
         pts = 0; holeAAG = np2;
@@ -706,22 +633,31 @@ function recalcAll() {
       } else {
         pts = puntos(g, par, p.hcp, hcpH);
         holeAAG = aag(g, par, p.hcp, hcpH);
-        const [bg,fg] = scoreColor(pts, false, g - par - stk);
+        const netOverPar = g - par - stk;
+        const [bg,fg] = scoreColor(pts, false, netOverPar);
         if (el) { el.style.background=bg; el.style.color=fg; }
         if (h<9) { f9g+=g; f9ok=true; } else { b9g+=g; b9ok=true; }
       }
-      totPts += pts; totAAG += holeAAG;
+      totPts += pts;
+      totAAG += holeAAG;
     }
+
     const any = f9ok||b9ok;
+    // ── Cambio 2: mostrar X en totales si hubo pickup ──────────────────────
     set(`f9_${j}`,   !f9ok ? '—' : f9pickup ? 'X' : f9g);
     set(`b9_${j}`,   !b9ok ? '—' : b9pickup ? 'X' : b9g);
     set(`tot_${j}`,  !any  ? '—' : (f9pickup||b9pickup) ? 'X' : f9g+b9g);
     set(`stbl_${j}`, any   ? totPts : '—');
     set(`aag_${j}`,  any   ? totAAG : '—');
   });
-  if (players.length===4) recalcTeam();
+
+  if (players.length===4) {
+    if (gameMode === '12best') recalcTeam();
+    else recalcBestBall();
+  }
   if (players.length===3) recalc420();
-  if (players.length===2) recalcMatch();
+
+  // ── Cambio 5: auto-guardar en cada cambio ─────────────────────────────────
   saveState();
 }
 
@@ -729,7 +665,9 @@ function set(id, val) {
   const el = document.getElementById(id); if (el) el.textContent = val;
 }
 
-// ════ A LA 1° Y 2° MEJORES (4 jugadores) ════
+// ════════════════════════════════════════════════════════════════════════════
+//  MODALIDAD: A LA 1° Y 2° MEJORES  (4 jugadores)
+// ════════════════════════════════════════════════════════════════════════════
 
 function buildTeamSection() {
   document.getElementById('team-section').style.display = 'block';
@@ -737,6 +675,7 @@ function buildTeamSection() {
   document.getElementById('team-sub').textContent =
     `Equipo A: ${players[0].ini}(${h85s[0]}) / ${players[1].ini}(${h85s[1]})` +
     `   ·   Equipo B: ${players[2].ini}(${h85s[2]}) / ${players[3].ini}(${h85s[3]})`;
+
   const tbl = document.getElementById('team-tbl');
   tbl.innerHTML = '';
   const thead = document.createElement('thead');
@@ -750,6 +689,7 @@ function buildTeamSection() {
     </tr>`;
   tbl.appendChild(thead);
   const tbody = document.createElement('tbody'); tbl.appendChild(tbody);
+
   function addHoleRow(h) {
     const [par,hcpH] = course[h];
     const tr = document.createElement('tr');
@@ -761,11 +701,13 @@ function buildTeamSection() {
   }
   function addTeamRow(label, idA, idB, css) {
     const tr = document.createElement('tr'); tr.className = css;
-    tr.innerHTML = `<td class="lbl" colspan="3">${label}</td>` +
+    tr.innerHTML =
+      `<td class="lbl" colspan="3">${label}</td>` +
       `<td class="c-team" id="${idA}">—</td><td class="c-team" id="${idB}">—</td>`;
     tbody.appendChild(tr);
   }
   for (let h=0; h<9; h++) addHoleRow(h);
+  // ── Cambio 4: Ida / Vuelta ─────────────────────────────────────────────────
   addTeamRow('Ida',    'ta_f9','tb_f9','r-sub');
   for (let h=9; h<18; h++) addHoleRow(h);
   addTeamRow('Vuelta', 'ta_b9','tb_b9','r-sub');
@@ -774,27 +716,32 @@ function buildTeamSection() {
 }
 
 function calcHoleTeam(h) {
-  const [,hcpH] = course[h];
+  const [par,hcpH] = course[h];
   const nets = [];
   for (let j = 0; j < 4; j++) {
     const el = document.getElementById(`g${j}_${h}`);
     if (!el || el.value.trim() === '') return null;
     const raw = el.value.trim();
+    // ── Cambio 2: pickup (X) pierde el hoyo (net = Infinity) ──────────────
     const isPickup = (raw === 'X');
     const g = parseInt(raw);
     if (!isPickup && (isNaN(g) || g <= 0)) return null;
-    nets[j] = isPickup ? Infinity : g - strokesTeam(players[j].hcp, hcpH);
+    const stk = strokesTeam(players[j].hcp, hcpH);
+    nets[j] = isPickup ? Infinity : g - stk;
   }
-  const [a1,a2] = nets[0]<=nets[1] ? [nets[0],nets[1]] : [nets[1],nets[0]];
-  const [b1,b2] = nets[2]<=nets[3] ? [nets[2],nets[3]] : [nets[3],nets[2]];
-  const pts = [0,0];
-  if (a1<b1) pts[0]+=2; else if (b1<a1) pts[1]+=2;
-  if (a2<b2) pts[0]+=1; else if (b2<a2) pts[1]+=1;
+  const [a1, a2] = nets[0] <= nets[1] ? [nets[0], nets[1]] : [nets[1], nets[0]];
+  const [b1, b2] = nets[2] <= nets[3] ? [nets[2], nets[3]] : [nets[3], nets[2]];
+  const pts = [0, 0];
+  if      (a1 < b1) pts[0] += 2;
+  else if (b1 < a1) pts[1] += 2;
+  // Empate (incluyendo Infinity vs Infinity) → 0 pts, correcto
+  if      (a2 < b2) pts[0] += 1;
+  else if (b2 < a2) pts[1] += 1;
   return pts;
 }
 
 function applyTeam(td, p) {
-  td.textContent = p===0 ? '0' : p;
+  td.textContent = p === 0 ? '0' : p;
   if (p===3) td.className+=' tc-3';
   else if (p===2) td.className+=' tc-2';
   else if (p===1) td.className+=' tc-1';
@@ -805,136 +752,47 @@ function recalcTeam() {
   let f9A=0,f9B=0,b9A=0,b9B=0,f9ok=false,b9ok=false;
   for (let h=0; h<18; h++) {
     const pts = calcHoleTeam(h);
-    const tdA=document.getElementById(`ta_${h}`), tdB=document.getElementById(`tb_${h}`);
+    const tdA = document.getElementById(`ta_${h}`);
+    const tdB = document.getElementById(`tb_${h}`);
     if (!tdA||!tdB) continue;
     tdA.className='c-team'; tdB.className='c-team';
     if (!pts) { tdA.textContent='·'; tdB.textContent='·'; continue; }
-    applyTeam(tdA,pts[0]); applyTeam(tdB,pts[1]);
+    applyTeam(tdA, pts[0]); applyTeam(tdB, pts[1]);
     if (h<9) { f9A+=pts[0]; f9B+=pts[1]; f9ok=true; }
     else     { b9A+=pts[0]; b9B+=pts[1]; b9ok=true; }
   }
-  const setTd=(id,val)=>{const el=document.getElementById(id);if(el){el.textContent=val;el.className='c-team';}};
-  setTd('ta_f9',f9ok?f9A:'—'); setTd('tb_f9',f9ok?f9B:'—');
-  setTd('ta_b9',b9ok?b9A:'—'); setTd('tb_b9',b9ok?b9B:'—');
+  const setTd = (id,val) => { const el=document.getElementById(id); if(el){el.textContent=val;el.className='c-team';} };
+  setTd('ta_f9', f9ok?f9A:'—'); setTd('tb_f9', f9ok?f9B:'—');
+  setTd('ta_b9', b9ok?b9A:'—'); setTd('tb_b9', b9ok?b9B:'—');
   const any=f9ok||b9ok, totA=f9A+b9A, totB=f9B+b9B;
-  setTd('ta_tot',any?totA:'—'); setTd('tb_tot',any?totB:'—');
+  setTd('ta_tot', any?totA:'—'); setTd('tb_tot', any?totB:'—');
+
   const dA=document.getElementById('ta_dif'), dB=document.getElementById('tb_dif');
   if (!dA||!dB) return;
   dA.className='c-team'; dB.className='c-team';
   if (!any) { dA.textContent='—'; dB.textContent='—'; }
   else if (totA===totB) { dA.textContent='EMPATE'; dB.textContent='EMPATE'; }
   else if (totA>totB) {
-    dA.textContent=`+${totA-totB}`; dA.className+=' tc-2'; dB.textContent='—';
+    const d=totA-totB;
+    dA.textContent=`+${d}`; dA.className+=' tc-2';
+    dB.textContent=`-${d}`; dB.className+=' tc-0';
   } else {
-    dA.textContent='—'; dB.textContent=`+${totB-totA}`; dB.className+=' tc-2';
+    const d=totB-totA;
+    dA.textContent=`-${d}`; dA.className+=' tc-0';
+    dB.textContent=`+${d}`; dB.className+=' tc-2';
   }
 }
 
-// ════ MATCH (2 jugadores) ════
-
-function buildMatchSection() {
-  document.getElementById('section-match').style.display = 'block';
-  const h85s = players.map(p => hcp85(p.hcp));
-  document.getElementById('sub-match').textContent =
-    `${players[0].ini} (HCP ${h85s[0]})  vs  ${players[1].ini} (HCP ${h85s[1]})`;
-  const tbl = document.getElementById('tbl-match');
-  tbl.innerHTML = '';
-  const thead = document.createElement('thead');
-  const colors = ['#ffd700','#87ceeb'];
-  let th = '<tr><th class="c-fix">H</th><th class="c-fix">Par</th><th class="c-fix">HCP</th>';
-  players.forEach((p,i) =>
-    th += `<th class="c-match" style="color:${colors[i]}">${p.ini}<br><span style="color:#a8d8a8;font-size:10px">HCP ${h85s[i]}</span></th>`
-  );
-  th += '</tr>';
-  thead.innerHTML = th; tbl.appendChild(thead);
-  const tbody = document.createElement('tbody'); tbl.appendChild(tbody);
-  function addHoleMatch(h) {
-    const [par,hcpH] = course[h];
-    const tr = document.createElement('tr');
-    tr.className = h%2===0 ? 'r-even':'r-odd';
-    let html = `<td class="c-fix">${h+1}</td><td class="c-fix">${par}</td><td class="c-fix">${hcpH}</td>`;
-    players.forEach((_,j) => html += `<td class="c-match" id="pm_${j}_${h}">·</td>`);
-    tr.innerHTML = html; tbody.appendChild(tr);
-  }
-  function addRowMatch(label, mkId, css) {
-    const tr = document.createElement('tr'); tr.className = css;
-    let html = `<td class="lbl" colspan="3">${label}</td>`;
-    players.forEach((_,j) => html += `<td class="c-match" id="${mkId(j)}">—</td>`);
-    tr.innerHTML = html; tbody.appendChild(tr);
-  }
-  for (let h=0; h<9; h++) addHoleMatch(h);
-  addRowMatch('Ida',        j=>`pmf9_${j}`,  'r-sub');
-  for (let h=9; h<18; h++) addHoleMatch(h);
-  addRowMatch('Vuelta',     j=>`pmb9_${j}`,  'r-sub');
-  addRowMatch('TOTAL',      j=>`pmtot_${j}`, 'r-total');
-  addRowMatch('DIFERENCIA', j=>`pmdif_${j}`, 'r-diff');
-}
-
-function calcHoleMatch(h) {
-  const [,hcpH] = course[h];
-  const nets = players.map((p,j) => {
-    const el = document.getElementById(`g${j}_${h}`);
-    if (!el||el.value.trim()==='') return null;
-    const raw = el.value.trim();
-    const isPickup = (raw==='X');
-    const g = parseInt(raw);
-    if (!isPickup&&(isNaN(g)||g<=0)) return null;
-    return isPickup ? Infinity : g - strokesTeam(p.hcp,hcpH);
-  });
-  if (nets.some(n=>n===null)) return null;
-  if (nets[0] < nets[1]) return [1,0];
-  if (nets[1] < nets[0]) return [0,1];
-  return [0,0];
-}
-
-function recalcMatch() {
-  const f9=[0,0], b9=[0,0];
-  let f9ok=false, b9ok=false;
-  for (let h=0; h<18; h++) {
-    const pts = calcHoleMatch(h);
-    for (let j=0; j<2; j++) {
-      const td = document.getElementById(`pm_${j}_${h}`);
-      if (!td) continue;
-      td.className = 'c-match';
-      if (!pts) { td.textContent='·'; continue; }
-      const p=pts[j], other=pts[1-j];
-      if      (p===1)            { td.textContent='1'; td.className+=' mc-win'; }
-      else if (p===0&&other===0) { td.textContent='='; td.className+=' mc-tie'; }
-      else                       { td.textContent='—'; td.className+=' mc-lose'; }
-    }
-    if (pts) {
-      if (h<9) { f9[0]+=pts[0]; f9[1]+=pts[1]; f9ok=true; }
-      else     { b9[0]+=pts[0]; b9[1]+=pts[1]; b9ok=true; }
-    }
-  }
-  const tot = f9.map((v,j)=>v+b9[j]);
-  const setM=(id,val)=>{ const el=document.getElementById(id); if(el){el.textContent=val;el.className='c-match';} };
-  players.forEach((_,j)=>{
-    setM(`pmf9_${j}`,  f9ok ? (f9[j]||'0') : '—');
-    setM(`pmb9_${j}`,  b9ok ? (b9[j]||'0') : '—');
-    setM(`pmtot_${j}`, (f9ok||b9ok) ? (tot[j]||'0') : '—');
-  });
-  const dEls = players.map((_,j)=>document.getElementById(`pmdif_${j}`));
-  dEls.forEach(el=>{ if(el) el.className='c-match'; });
-  if (!(f9ok||b9ok)) { dEls.forEach(el=>{ if(el) el.textContent='—'; }); return; }
-  if (tot[0]===tot[1]) {
-    dEls.forEach(el=>{ if(el) el.textContent='EMPATE'; });
-  } else if (tot[0]>tot[1]) {
-    if(dEls[0]){ dEls[0].textContent=`+${tot[0]-tot[1]}`; dEls[0].className+=' mc-win'; }
-    if(dEls[1]){ dEls[1].textContent='—'; }
-  } else {
-    if(dEls[0]){ dEls[0].textContent='—'; }
-    if(dEls[1]){ dEls[1].textContent=`+${tot[1]-tot[0]}`; dEls[1].className+=' mc-win'; }
-  }
-}
-
-// ════ 4 - 2 - 0 (3 jugadores) ════
+// ════════════════════════════════════════════════════════════════════════════
+//  MODALIDAD: 4 — 2 — 0  (3 jugadores)
+// ════════════════════════════════════════════════════════════════════════════
 
 function build420Section() {
   document.getElementById('section420').style.display = 'block';
   const h85s = players.map(p=>hcp85(p.hcp));
   document.getElementById('sub420').textContent =
     players.map((p,i)=>`${p.ini}(${h85s[i]})`).join('  ·  ');
+
   const tbl = document.getElementById('tbl420');
   tbl.innerHTML = '';
   const thead = document.createElement('thead');
@@ -946,6 +804,7 @@ function build420Section() {
   th += '</tr>';
   thead.innerHTML = th; tbl.appendChild(thead);
   const tbody = document.createElement('tbody'); tbl.appendChild(tbody);
+
   function addHole420(h) {
     const [par,hcpH] = course[h];
     const tr = document.createElement('tr');
@@ -961,19 +820,21 @@ function build420Section() {
     tr.innerHTML = html; tbody.appendChild(tr);
   }
   for (let h=0; h<9; h++) addHole420(h);
+  // ── Cambio 4: Ida / Vuelta ─────────────────────────────────────────────────
   addRow420('Ida',    j=>`p4f9_${j}`, 'r-sub');
   for (let h=9; h<18; h++) addHole420(h);
   addRow420('Vuelta', j=>`p4b9_${j}`, 'r-sub');
-  addRow420('TOTAL',       j=>`p4tot_${j}`, 'r-total');
-  addRow420('DIFERENCIA',  j=>`p4dif_${j}`, 'r-diff');
+  addRow420('TOTAL',   j=>`p4tot_${j}`, 'r-total');
+  addRow420('DIFERENCIA', j=>`p4dif_${j}`, 'r-diff');
 }
 
 function calcHole420(h) {
-  const [,hcpH] = course[h];
+  const [par,hcpH] = course[h];
   const data = players.map((p,j) => {
     const el = document.getElementById(`g${j}_${h}`);
     if (!el||el.value.trim()==='') return null;
     const raw = el.value.trim();
+    // ── Cambio 2: pickup = 3ro en 4-2-0 (net Infinity) ────────────────────
     const isPickup = (raw === 'X');
     const g = parseInt(raw);
     if (!isPickup && (isNaN(g)||g<=0)) return null;
@@ -981,141 +842,156 @@ function calcHole420(h) {
     return { j, net: isPickup ? Infinity : g-stk, pickup: isPickup };
   });
   if (data.some(d=>d===null)) return null;
+
   const pts = [0,0,0];
   const active = data.filter(d=>!d.pickup).sort((a,b)=>a.net-b.net);
-  if (active.length===3) {
-    const [n0,n1,n2] = active.map(a=>a.net);
-    if (n0===n1&&n1===n2) {}
-    else if (n0===n1) { pts[active[0].j]=3; pts[active[1].j]=3; }
-    else if (n1===n2) { pts[active[0].j]=4; pts[active[1].j]=1; pts[active[2].j]=1; }
-    else              { pts[active[0].j]=4; pts[active[1].j]=2; }
-  } else if (active.length===2) {
-    if (active[0].net===active[1].net) { pts[active[0].j]=3; pts[active[1].j]=3; }
-    else                               { pts[active[0].j]=4; pts[active[1].j]=2; }
-  } else if (active.length===1) {
-    pts[active[0].j]=4;
+
+  if (active.length === 3) {
+    // Nadie levantó → lógica original
+    const n0=active[0].net, n1=active[1].net, n2=active[2].net;
+    if (n0===n1 && n1===n2) {
+      // Triple empate → 0 c/u
+    } else if (n0===n1) {
+      pts[active[0].j]=3; pts[active[1].j]=3;
+    } else if (n1===n2) {
+      pts[active[0].j]=4; pts[active[1].j]=1; pts[active[2].j]=1;
+    } else {
+      pts[active[0].j]=4; pts[active[1].j]=2;
+    }
+  } else if (active.length === 2) {
+    const n0=active[0].net, n1=active[1].net;
+    if (n0===n1) { pts[active[0].j]=3; pts[active[1].j]=3; }
+    else         { pts[active[0].j]=4; pts[active[1].j]=2; }
+  } else if (active.length === 1) {
+    pts[active[0].j] = 4;
   }
+  // Los que levantaron quedan con 0 (ya inicializado)
   return pts;
 }
 
-// ════ CAMBIO DE CANCHA ════
-function onCselChange() {
-  const val = document.getElementById('csel').value;
-  if (val === '__nueva__') {
-    openNuevaCancha();
-  } else {
-    populateHcpTable();
+// ════════════════════════════════════════════════════════════════════════════
+//  MODALIDAD: MEJOR PELOTA DE EQUIPO  (4 jugadores, modo '1best')
+//  Gana el equipo cuyo jugador logró el menor net. 1 pt/hoyo, 0 en empate.
+// ════════════════════════════════════════════════════════════════════════════
+
+function buildBestBallSection() {
+  document.getElementById('bestball-section').style.display = 'block';
+  const h85s = players.map(p => hcp85(p.hcp));
+  document.getElementById('bestball-sub').textContent =
+    `Equipo A: ${players[0].ini}(${h85s[0]}) / ${players[1].ini}(${h85s[1]})` +
+    `   ·   Equipo B: ${players[2].ini}(${h85s[2]}) / ${players[3].ini}(${h85s[3]})`;
+
+  const tbl = document.getElementById('bestball-tbl');
+  tbl.innerHTML = '';
+  const thead = document.createElement('thead');
+  thead.innerHTML =
+    `<tr>
+      <th class="c-fix">H</th><th class="c-fix">Par</th><th class="c-fix">HCP</th>
+      <th class="c-team" style="color:#ffd700">Equipo A<br>
+        <span style="color:#a8d8a8;font-size:10px">${players[0].ini} / ${players[1].ini}</span></th>
+      <th class="c-team" style="color:#87ceeb">Equipo B<br>
+        <span style="color:#a8d8a8;font-size:10px">${players[2].ini} / ${players[3].ini}</span></th>
+    </tr>`;
+  tbl.appendChild(thead);
+  const tbody = document.createElement('tbody'); tbl.appendChild(tbody);
+
+  function addHoleRowBB(h) {
+    const [par,hcpH] = course[h];
+    const tr = document.createElement('tr');
+    tr.className = h%2===0 ? 'r-even':'r-odd';
+    tr.innerHTML =
+      `<td class="c-fix">${h+1}</td><td class="c-fix">${par}</td><td class="c-fix">${hcpH}</td>` +
+      `<td class="c-team" id="bb_a_${h}">·</td><td class="c-team" id="bb_b_${h}">·</td>`;
+    tbody.appendChild(tr);
   }
+  function addRowBB(label, idA, idB, css) {
+    const tr = document.createElement('tr'); tr.className = css;
+    tr.innerHTML =
+      `<td class="lbl" colspan="3">${label}</td>` +
+      `<td class="c-team" id="${idA}">—</td><td class="c-team" id="${idB}">—</td>`;
+    tbody.appendChild(tr);
+  }
+  for (let h=0; h<9; h++) addHoleRowBB(h);
+  addRowBB('Ida',    'bb_a_f9','bb_b_f9','r-sub');
+  for (let h=9; h<18; h++) addHoleRowBB(h);
+  addRowBB('Vuelta', 'bb_a_b9','bb_b_b9','r-sub');
+  addRowBB('TOTAL',  'bb_a_tot','bb_b_tot','r-total');
+  addRowBB('DIFERENCIA','bb_a_dif','bb_b_dif','r-diff');
 }
 
-// ════ NUEVA CANCHA ════
-function openNuevaCancha() {
-  const grid = document.getElementById('nc-holes-grid');
-  if (!grid.children.length) {
-    for (let i = 0; i < 9; i++) {
-      const h1 = i + 1, h2 = i + 10;
-      [h1, h2].forEach(h => {
-        const d = document.createElement('div'); d.className = 'nc-hole';
-        d.innerHTML =
-          `<span class="nc-hole-lbl">H${h}</span>` +
-          `<input type="number" id="nc-par${h}" min="3" max="5" placeholder="Par" inputmode="numeric">` +
-          `<input type="number" id="nc-hcp${h}" min="1" max="18" placeholder="Hcp" inputmode="numeric">`;
-        grid.appendChild(d);
-      });
+function calcHoleBestBall(h) {
+  const [,hcpH] = course[h];
+  const nets = [];
+  for (let j = 0; j < 4; j++) {
+    const el = document.getElementById(`g${j}_${h}`);
+    if (!el || el.value.trim() === '') return null;
+    const raw = el.value.trim();
+    const isPickup = (raw === 'X');
+    const g = parseInt(raw);
+    if (!isPickup && (isNaN(g) || g <= 0)) return null;
+    const stk = strokesTeam(players[j].hcp, hcpH);
+    nets[j] = isPickup ? Infinity : g - stk;
+  }
+  const bestA = Math.min(nets[0], nets[1]);
+  const bestB = Math.min(nets[2], nets[3]);
+  if (bestA < bestB) return [1, 0];
+  if (bestB < bestA) return [0, 1];
+  return [0, 0]; // empate
+}
+
+function recalcBestBall() {
+  let f9A=0,f9B=0,b9A=0,b9B=0,f9ok=false,b9ok=false;
+
+  for (let h=0; h<18; h++) {
+    const pts = calcHoleBestBall(h);
+    const tdA = document.getElementById(`bb_a_${h}`);
+    const tdB = document.getElementById(`bb_b_${h}`);
+    if (!tdA||!tdB) continue;
+    tdA.className='c-team'; tdB.className='c-team';
+    if (!pts) { tdA.textContent='·'; tdB.textContent='·'; continue; }
+
+    if (pts[0]===1) {
+      tdA.textContent='1'; tdA.className+=' tc-2';
+      tdB.textContent='0'; tdB.className+=' tc-0';
+    } else if (pts[1]===1) {
+      tdA.textContent='0'; tdA.className+=' tc-0';
+      tdB.textContent='1'; tdB.className+=' tc-2';
+    } else {
+      tdA.textContent='='; tdB.textContent='='; // empate
     }
-  }
-  document.getElementById('nc-toast').textContent = '';
-  document.getElementById('nc-overlay').classList.add('open');
-}
-
-function cerrarNuevaCancha() {
-  document.getElementById('nc-overlay').classList.remove('open');
-  // Volver a la primera cancha del listado
-  const sel = document.getElementById('csel');
-  for (let i = 0; i < sel.options.length; i++) {
-    if (sel.options[i].value !== '__nueva__') { sel.value = sel.options[i].value; break; }
-  }
-  populateHcpTable();
-}
-
-function ncToast(msg, ok) {
-  const t = document.getElementById('nc-toast');
-  t.textContent = msg;
-  t.style.color = ok ? '#90ee90' : '#f08080';
-}
-
-function guardarNuevaCancha() {
-  const nombre = document.getElementById('nc-nombre').value.trim();
-  const ubicacion = document.getElementById('nc-ubicacion').value.trim();
-  if (!nombre) { ncToast('⚠ Ingresá el nombre de la cancha.', false); return; }
-
-  const pars = [], hcps = [];
-  for (let h = 1; h <= 18; h++) {
-    const par = parseInt(document.getElementById(`nc-par${h}`).value);
-    const hcp = parseInt(document.getElementById(`nc-hcp${h}`).value);
-    if (isNaN(par) || par < 3 || par > 5) { ncToast(`⚠ Par inválido en hoyo ${h} (debe ser 3, 4 ó 5).`, false); return; }
-    if (isNaN(hcp) || hcp < 1 || hcp > 18) { ncToast(`⚠ HCP inválido en hoyo ${h} (1 a 18).`, false); return; }
-    pars.push(par); hcps.push(hcp);
-  }
-  const uniq = new Set(hcps);
-  if (uniq.size !== 18) {
-    const dups = [...new Set(hcps.filter((v,i,a)=>a.indexOf(v)!==i))].sort((a,b)=>a-b);
-    ncToast(`⚠ HCP repetidos: ${dups.join(', ')}.`, false); return;
+    if (h<9) { f9A+=pts[0]; f9B+=pts[1]; f9ok=true; }
+    else     { b9A+=pts[0]; b9B+=pts[1]; b9ok=true; }
   }
 
-  // Agregar a COURSES
-  const courseData = hcps.map((hcp, i) => [pars[i], hcp]);
-  COURSES[nombre] = courseData;
+  const setTd = (id,val,extra) => {
+    const el=document.getElementById(id);
+    if(el){ el.textContent=val; el.className='c-team'+(extra?' '+extra:''); }
+  };
+  setTd('bb_a_f9', f9ok?f9A:'—'); setTd('bb_b_f9', f9ok?f9B:'—');
+  setTd('bb_a_b9', b9ok?b9A:'—'); setTd('bb_b_b9', b9ok?b9B:'—');
+  const any=f9ok||b9ok, totA=f9A+b9A, totB=f9B+b9B;
+  setTd('bb_a_tot', any?totA:'—'); setTd('bb_b_tot', any?totB:'—');
 
-  // Persistir en localStorage
-  const saved = JSON.parse(localStorage.getItem('custom_courses_suasa') || '[]');
-  const idx = saved.findIndex(c => c.name === nombre);
-  const entry = { name: nombre, location: ubicacion, data: courseData };
-  if (idx >= 0) saved[idx] = entry; else saved.push(entry);
-  localStorage.setItem('custom_courses_suasa', JSON.stringify(saved));
-
-  // Agregar al select (si no existe)
-  const sel = document.getElementById('csel');
-  if (!sel.querySelector(`option[value="${nombre}"]`)) {
-    const opt = document.createElement('option');
-    opt.value = opt.textContent = nombre;
-    sel.insertBefore(opt, sel.lastElementChild); // antes de "Cancha nueva"
+  if (!any) { setTd('bb_a_dif','—'); setTd('bb_b_dif','—'); return; }
+  if (totA===totB) {
+    setTd('bb_a_dif','EMPATE'); setTd('bb_b_dif','EMPATE');
+  } else if (totA>totB) {
+    setTd('bb_a_dif',`+${totA-totB}`,'tc-2');
+    setTd('bb_b_dif',`-${totA-totB}`,'tc-0');
+  } else {
+    setTd('bb_a_dif',`-${totB-totA}`,'tc-0');
+    setTd('bb_b_dif',`+${totB-totA}`,'tc-2');
   }
-  sel.value = nombre;
-
-  ncToast('✅ ¡Cancha guardada! Enviando datos…', true);
-
-  // Enviar mail
-  fetch('https://formsubmit.co/ajax/fa.marseillan@gmail.com', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({
-      _subject: `SUASA - Nueva cancha: ${nombre}`,
-      Cancha: nombre,
-      Ubicacion: ubicacion || '(no indicada)',
-      Hoyos: hcps.map((hcp, i) => `H${i+1}: Par ${pars[i]} Hcp ${hcp}`).join(' | ')
-    })
-  }).catch(() => {});
-
-  setTimeout(() => {
-    document.getElementById('nc-overlay').classList.remove('open');
-    // Actualizar la pantalla DESPUÉS de cerrar el overlay
-    document.getElementById('csel').value = nombre;
-    populateHcpTable();
-  }, 1400);
 }
 
-// ════ INSTRUCCIONES ════
-function openInstructions() {
-  document.getElementById('modal-instrucciones').classList.add('open');
-}
-function closeInstructions() {
-  document.getElementById('modal-instrucciones').classList.remove('open');
-}
+// ════════════════════════════════════════════════════════════════════════════
+//  MODALIDAD: 4 — 2 — 0  (3 jugadores)
+// ════════════════════════════════════════════════════════════════════════════
 
 function recalc420() {
-  const f9=[0,0,0], b9=[0,0,0];
+  const f9 =[0,0,0], b9=[0,0,0];
   let f9ok=false, b9ok=false;
+
   for (let h=0; h<18; h++) {
     const pts = calcHole420(h);
     for (let j=0; j<3; j++) {
@@ -1136,14 +1012,18 @@ function recalc420() {
       else     { pts.forEach((p,j)=>b9[j]+=p); b9ok=true; }
     }
   }
+
   const tot = f9.map((v,j)=>v+b9[j]);
-  const setP4=(id,val)=>{ const el=document.getElementById(id); if(el){el.textContent=val;el.className='c-p420';} };
+  const setP4 = (id,val) => { const el=document.getElementById(id); if(el){el.textContent=val;el.className='c-p420';} };
   players.forEach((_,j)=>{
-    setP4(`p4f9_${j}`,  f9ok?f9[j]:'—');
-    setP4(`p4b9_${j}`,  b9ok?b9[j]:'—');
-    setP4(`p4tot_${j}`, (f9ok||b9ok)?tot[j]:'—');
+    setP4(`p4f9_${j}`, f9ok ? f9[j] : '—');
+    setP4(`p4b9_${j}`, b9ok ? b9[j] : '—');
+    setP4(`p4tot_${j}`, (f9ok||b9ok) ? tot[j] : '—');
   });
-  if (!(f9ok||b9ok)) { players.forEach((_,j)=>setP4(`p4dif_${j}`,'—')); return; }
+
+  if (!(f9ok||b9ok)) {
+    players.forEach((_,j)=>setP4(`p4dif_${j}`,'—')); return;
+  }
   const minTot = Math.min(...tot);
   players.forEach((_,j)=>{
     const el = document.getElementById(`p4dif_${j}`);
