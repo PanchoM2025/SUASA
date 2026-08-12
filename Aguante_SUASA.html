@@ -19,7 +19,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20260812-009";
+const VERSION = "20260812-010";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -316,9 +316,6 @@ td.fc-0 { color:#aaa !important; }
   <div class="manual-box">
     <h2>⛳ S.U.A.S.A. — Manual</h2>
 
-    <h3>El juego</h3>
-    <p>S.U.A.S.A. (Score Único Acumulado Sin Averías) es una app de tarjeta de golf para <strong>3 o 4 jugadores</strong> con múltiples modalidades de puntaje simultáneas.</p>
-
     <h3>Configuración</h3>
     <p>• Elegí la cancha del selector.<br>
     • Ingresá las iniciales y el HCP oficial de cada jugador.<br>
@@ -338,12 +335,9 @@ td.fc-0 { color:#aaa !important; }
         <tr><td style="background:#CC4400;color:#fff">■ Naranja oscuro</td><td>Triple+ / pickup (X)</td></tr>
       </tbody>
     </table>
-    <p style="font-size:11px;color:#a8d8a8;margin-top:4px">Pickup: escribí <strong>X</strong> o <strong>0</strong> → se registra como mayor al doble bogey.</p>
-
     <h3>Stableford &amp; AAG</h3>
-    <p>Se calculan automáticamente con HCP 100%.<br>
-    <span class="hilite">Stableford:</span> par + HCP + 2 − score (mín. 0).<br>
-    <span class="hilite">AAG:</span> mín(score, par + HCP + 2).</p>
+    <p><span class="hilite">Stableford</span> al 100% del HCP.<br>
+    <span class="hilite">AAG:</span> se toma el score del jugador, pero si supera el doble bogey neto se topa ahí.</p>
 
     <h3 style="color:#ffd700">🏆 A la 1° y 2° mejor pelota &nbsp;(4 jug.)</h3>
     <p>Equipos fijos: <strong>Equipo A</strong> = jugadores 1 y 2 · <strong>Equipo B</strong> = jugadores 3 y 4.<br>
