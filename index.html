@@ -21,7 +21,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20260815-007";
+const VERSION = "20260815-008";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -1186,7 +1186,8 @@ function setupStickyHeader() {
       if (cloneThs[i]) cloneThs[i].style.width = w + 'px';
       totalW += w;
     });
-    cloneTbl.style.width = totalW + 'px';
+    cloneTbl.style.width    = totalW + 'px';
+    cloneTbl.style.minWidth = '0';        // anula min-width:100% heredado de .sc
     inner.scrollLeft = wrap.scrollLeft;
   }
 
