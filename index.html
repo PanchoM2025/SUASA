@@ -21,7 +21,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20260813-025";
+const VERSION = "20260815-003";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -272,6 +272,15 @@ td.mc-lose { color:#555 !important; }
   touch-action:manipulation; -webkit-user-select:none; user-select:none;
 }
 .btn-new:active { background:#3d8a3d; }
+
+/* ── MODAL MODO DE JUEGO ── */
+.mode-btn {
+  width:100%; padding:16px 12px; background:#1a472a; color:#ffd700;
+  font-size:16px; font-weight:bold; border:2px solid #3d8a3d; border-radius:10px;
+  cursor:pointer; touch-action:manipulation; display:block; text-align:center;
+  -webkit-user-select:none; user-select:none; line-height:1.4;
+}
+.mode-btn:active { background:#2d6a2d; }
 </style>
 </head>
 <body>
@@ -354,9 +363,9 @@ td.mc-lose { color:#555 !important; }
     <div class="m-bullet"><span>•</span><span>Una tabla con los Hcp de c/hoyo de la<br><span style="padding-left:4px">cancha seleccionada. Los que pueden</span><br><span style="padding-left:4px">modificarse y guardar antes de continuar.</span></span></div>
     <p style="margin-top:12px;font-size:13px">Seg&#xFA;n la cantidad de jugadores, la siguiente pantalla &mdash; adem&#xE1;s del score &mdash; muestra el Stableford (HCP 100%) y el AAG (Double Bogey Neto), y ofrece:</p>
     <div class="m-mod">&#x1F3C6; Con 4 jugadores:</div>
-    <div class="m-mod-desc">&#x201C;1&#xB0; y 2&#xB0; mejores pelotas&#x201D; (HCP 85%)<br>2 ptos la 1&#xB0; mejor &middot; 1 pto la 2&#xB0; mejor.</div>
+    <div class="m-mod-desc">&#x201C;1&#xB0; y 2&#xB0; mejores&#x201D; o &#x201C;A la mejor&#x201D; (HCP 85%).<br>Opci&#xF3;n de jugar con HCP completo o bajar a cero.</div>
     <div class="m-mod">&#x26A1; Con 3 jugadores:</div>
-    <div class="m-mod-desc">&#x201C;4-2-0&#x201D; &mdash; 4 ptos mejor pelota<br>del hoyo &middot; 2 ptos la segunda.</div>
+    <div class="m-mod-desc">&#x201C;4-2-0&#x201D; &mdash; 4 ptos mejor pelota<br>del hoyo &middot; 2 ptos la segunda.<br>Opci&#xF3;n de HCP completo o bajar a cero.</div>
     <div class="m-mod">&#x1F94A; Con 2 jugadores:</div>
     <div class="m-mod-desc">Match &mdash; 1 pto por cada hoyo ganado.</div>
     <button class="modal-close" onclick="closeInstructions()">Cerrar</button>
@@ -372,12 +381,12 @@ td.mc-lose { color:#555 !important; }
 
   <!-- A LA 1° Y 2° MEJORES (4 jugadores) -->
   <div id="team-section" style="display:none" class="sec-sep">
-    <p class="sec-title" style="color:#ffd700">&#x1F3C6; A LA 1&#xBA; Y 2&#xBA; MEJORES</p>
+    <p class="sec-title" style="color:#ffd700" id="team-section-title">&#x1F3C6; A LA 1&#xBA; Y 2&#xBA; MEJORES</p>
     <p class="sec-sub" id="team-sub"></p>
     <div class="sc-wrap">
       <table class="sc" id="team-tbl"></table>
     </div>
-    <p class="sec-legend">1&#xBA; neto unico = 2 pts &nbsp;&middot;&nbsp; 2&#xBA; neto unico = 1 pt &nbsp;&middot;&nbsp; Empate = 0 pts &nbsp;|&nbsp; HCP 85%</p>
+    <p class="sec-legend" id="team-legend">1&#xBA; neto unico = 2 pts &nbsp;&middot;&nbsp; 2&#xBA; neto unico = 1 pt &nbsp;&middot;&nbsp; Empate = 0 pts &nbsp;|&nbsp; HCP 85%</p>
     <p class="sec-legend" style="margin-top:4px">&middot; Los puntos se calculan hoyo por hoyo cuando los 4 jugadores tienen score &middot;</p>
   </div>
 
@@ -398,10 +407,38 @@ td.mc-lose { color:#555 !important; }
     <div class="sc-wrap">
       <table class="sc" id="tbl420"></table>
     </div>
-    <p class="sec-legend">1&#xBA; = 4 pts &middot; 2&#xBA; = 2 pts &middot; 3&#xBA; = 0 &nbsp;|&nbsp; Empate 1&#xBA;/2&#xBA; &rarr; reparten (3 c/u) &nbsp;|&nbsp; HCP 85%</p>
+    <p class="sec-legend" id="legend-420">1&#xBA; = 4 pts &middot; 2&#xBA; = 2 pts &middot; 3&#xBA; = 0 &nbsp;|&nbsp; Empate 1&#xBA;/2&#xBA; &rarr; reparten (3 c/u) &nbsp;|&nbsp; HCP 85%</p>
   </div>
 
   <button class="btn-new" onclick="newGame()">&#x21A9; &nbsp;Nueva Partida</button>
+</div>
+
+<!-- ── MODAL MODO DE JUEGO ── -->
+<div id="modal-mode" style="display:none;position:fixed;inset:0;z-index:1001;background:rgba(0,0,0,0.88);justify-content:center;align-items:center;padding:20px;">
+  <div id="mode-step1" class="modal-box" style="text-align:center;">
+    <h2>&#x1F3C6; Modalidad de Juego</h2>
+    <p style="color:#a8d8a8;font-size:13px;margin-bottom:20px;">4 jugadores &mdash; &#xBF;C&#xF3;mo juegan?</p>
+    <button class="mode-btn" onclick="selectGameMode('1y2')">
+      1&#xB0; y 2&#xB0; Mejores<br>
+      <span style="font-size:11px;font-weight:normal;color:#a8d8a8">2 pts la 1&#xAA; mejor &middot; 1 pt la 2&#xAA; mejor</span>
+    </button>
+    <button class="mode-btn" style="margin-top:12px;" onclick="selectGameMode('mejor')">
+      A la Mejor<br>
+      <span style="font-size:11px;font-weight:normal;color:#a8d8a8">Solo la mejor pelota del equipo</span>
+    </button>
+  </div>
+  <div id="mode-step2" class="modal-box" style="display:none;text-align:center;">
+    <h2>&#x2699;&#xFE0F; H&#xE1;ndicap</h2>
+    <p style="color:#a8d8a8;font-size:13px;margin-bottom:20px;">&#xBF;C&#xF3;mo se aplican los HCP?</p>
+    <button class="mode-btn" onclick="selectHcpMode('completo')">
+      HCP Completo<br>
+      <span style="font-size:11px;font-weight:normal;color:#a8d8a8">85% del HCP de c/u contra la cancha</span>
+    </button>
+    <button class="mode-btn" style="margin-top:12px;" onclick="selectHcpMode('cero')">
+      Bajar a Cero<br>
+      <span style="font-size:11px;font-weight:normal;color:#a8d8a8">85% de la diferencia con el menor HCP</span>
+    </button>
+  </div>
 </div>
 
 <script>
@@ -474,9 +511,23 @@ function strokesTeam(hcp, hcpH) {
   const h = hcp85(hcp);
   return Math.floor(h/18) + (h%18 >= hcpH ? 1 : 0);
 }
+function effectiveTeamHcp(hcp) {
+  if (hcpMode === 'cero') {
+    const minHcp = Math.min(...players.map(p => p.hcp));
+    return Math.round((hcp - minHcp) * 0.85);
+  }
+  return hcp85(hcp);
+}
+function strokesForTeam(hcp, hcpH) {
+  const h = effectiveTeamHcp(hcp);
+  return Math.floor(h/18) + (h%18 >= hcpH ? 1 : 0);
+}
 
-let players = [];
-let course  = [];
+let players  = [];
+let course   = [];
+let gameMode = '1y2';      // '1y2' | 'mejor'
+let hcpMode  = 'completo'; // 'completo' | 'cero'
+let _tmpCourseName = '';
 const STATE_KEY = 'suasa_state_v1';
 
 function saveState() {
@@ -490,7 +541,7 @@ function saveState() {
   });
   try { localStorage.setItem(STATE_KEY, JSON.stringify({
     courseName: document.getElementById('sc-title').textContent,
-    players, course, scores
+    players, course, scores, gameMode, hcpMode
   })); } catch(e) {}
 }
 
@@ -498,7 +549,9 @@ function restoreState() {
   let saved;
   try { saved = JSON.parse(localStorage.getItem(STATE_KEY)); } catch(e) { return false; }
   if (!saved || !saved.players || !saved.course) return false;
-  players = saved.players;
+  players  = saved.players;
+  gameMode = saved.gameMode || '1y2';
+  hcpMode  = saved.hcpMode  || 'completo';
   const courseKey = (saved.courseName || '').replace(/\s*[-—–].*$/, '').trim();
   if (courseKey && COURSES[courseKey]) {
     const base = COURSES[courseKey];
@@ -634,7 +687,38 @@ function startGame() {
     const hv = parseInt(document.getElementById(`hv${h}`).value);
     return [par, isNaN(hv)||hv<1||hv>18 ? base[h][1] : hv];
   });
-  document.getElementById('sc-title').textContent = name + '  —  S.U.A.S.A.';
+  _tmpCourseName = name;
+  gameMode = '1y2';
+  hcpMode  = 'completo';
+  if (players.length === 4) {
+    showModeModal(1);
+  } else if (players.length === 3) {
+    showModeModal(2);
+  } else {
+    finishStartGame();
+  }
+}
+
+function showModeModal(step) {
+  const m = document.getElementById('modal-mode');
+  m.style.display = 'flex';
+  document.getElementById('mode-step1').style.display = step === 1 ? 'block' : 'none';
+  document.getElementById('mode-step2').style.display = step === 2 ? 'block' : 'none';
+}
+
+function selectGameMode(mode) {
+  gameMode = mode;
+  showModeModal(2);
+}
+
+function selectHcpMode(mode) {
+  hcpMode = mode;
+  document.getElementById('modal-mode').style.display = 'none';
+  finishStartGame();
+}
+
+function finishStartGame() {
+  document.getElementById('sc-title').textContent = _tmpCourseName + '  —  S.U.A.S.A.';
   buildScorecard();
   document.getElementById('team-section').style.display   = 'none';
   document.getElementById('section420').style.display     = 'none';
@@ -676,7 +760,7 @@ function buildScorecard() {
     tr.innerHTML = html; tbody.appendChild(tr);
     players.forEach((p,j) => {
       const el = document.getElementById(`g${j}_${h}`);
-      const stk = strokesTeam(p.hcp, hcpH);
+      const stk = strokesForTeam(p.hcp, hcpH);
       const [ibg,ifg] = strokeBg(stk);
       el.style.background = ibg; el.style.color = ifg;
       el.addEventListener('input', function() {
@@ -733,7 +817,7 @@ function recalcAll() {
       const isPickup = (raw === 'X');
       const g = parseInt(raw);
       if (!isPickup && (raw===''||isNaN(g)||g<=0)) {
-        if(el){ const [ibg,ifg]=strokeBg(strokesTeam(p.hcp,course[h][1])); el.style.background=ibg; el.style.color=ifg; }
+        if(el){ const [ibg,ifg]=strokeBg(strokesForTeam(p.hcp,course[h][1])); el.style.background=ibg; el.style.color=ifg; }
         continue;
       }
       const [par,hcpH] = course[h];
@@ -774,10 +858,19 @@ function set(id, val) {
 
 function buildTeamSection() {
   document.getElementById('team-section').style.display = 'block';
-  const h85s = players.map(p => hcp85(p.hcp));
+  const effHcps = players.map(p => effectiveTeamHcp(p.hcp));
+  const elTitle = document.getElementById('team-section-title');
+  if (elTitle) elTitle.textContent = gameMode === '1y2' ? '🏆 A LA 1ª Y 2ª MEJORES' : '🏆 A LA MEJOR';
+  const hcpLabel = hcpMode === 'cero' ? 'Baja a cero · 85% dif.' : 'HCP 85%';
+  const elLegend = document.getElementById('team-legend');
+  if (elLegend) {
+    elLegend.textContent = gameMode === '1y2'
+      ? `1º neto único = 2 pts · 2º neto único = 1 pt · Empate = 0 pts | ${hcpLabel}`
+      : `Mejor pelota gana = 1 pt · Empate = 0 pts | ${hcpLabel}`;
+  }
   document.getElementById('team-sub').textContent =
-    `Equipo A: ${players[0].ini}(${h85s[0]}) / ${players[1].ini}(${h85s[1]})` +
-    `   ·   Equipo B: ${players[2].ini}(${h85s[2]}) / ${players[3].ini}(${h85s[3]})`;
+    `Equipo A: ${players[0].ini}(${effHcps[0]}) / ${players[1].ini}(${effHcps[1]})` +
+    `   ·   Equipo B: ${players[2].ini}(${effHcps[2]}) / ${players[3].ini}(${effHcps[3]})`;
   const tbl = document.getElementById('team-tbl');
   tbl.innerHTML = '';
   const thead = document.createElement('thead');
@@ -785,9 +878,9 @@ function buildTeamSection() {
     `<tr>
       <th class="c-fix">H</th><th class="c-fix">Par</th><th class="c-fix">HCP</th>
       <th class="c-team" style="color:#ffd700">Equipo A<br>
-        <span style="color:#a8d8a8;font-size:10px">${players[0].ini} / ${players[1].ini}</span></th>
+        <span style="color:#a8d8a8;font-size:10px">${players[0].ini}(${effHcps[0]}) / ${players[1].ini}(${effHcps[1]})</span></th>
       <th class="c-team" style="color:#87ceeb">Equipo B<br>
-        <span style="color:#a8d8a8;font-size:10px">${players[2].ini} / ${players[3].ini}</span></th>
+        <span style="color:#a8d8a8;font-size:10px">${players[2].ini}(${effHcps[2]}) / ${players[3].ini}(${effHcps[3]})</span></th>
     </tr>`;
   tbl.appendChild(thead);
   const tbody = document.createElement('tbody'); tbl.appendChild(tbody);
@@ -824,13 +917,18 @@ function calcHoleTeam(h) {
     const isPickup = (raw === 'X');
     const g = parseInt(raw);
     if (!isPickup && (isNaN(g) || g <= 0)) return null;
-    nets[j] = isPickup ? Infinity : g - strokesTeam(players[j].hcp, hcpH);
+    nets[j] = isPickup ? Infinity : g - strokesForTeam(players[j].hcp, hcpH);
   }
   const [a1,a2] = nets[0]<=nets[1] ? [nets[0],nets[1]] : [nets[1],nets[0]];
   const [b1,b2] = nets[2]<=nets[3] ? [nets[2],nets[3]] : [nets[3],nets[2]];
   const pts = [0,0];
-  if (a1<b1) pts[0]+=2; else if (b1<a1) pts[1]+=2;
-  if (a2<b2) pts[0]+=1; else if (b2<a2) pts[1]+=1;
+  if (gameMode === '1y2') {
+    if (a1<b1) pts[0]+=2; else if (b1<a1) pts[1]+=2;
+    if (a2<b2) pts[0]+=1; else if (b2<a2) pts[1]+=1;
+  } else {
+    // A la mejor: 1 pto al equipo con la mejor pelota
+    if (a1<b1) pts[0]+=1; else if (b1<a1) pts[1]+=1;
+  }
   return pts;
 }
 
@@ -973,16 +1071,19 @@ function recalcMatch() {
 
 function build420Section() {
   document.getElementById('section420').style.display = 'block';
-  const h85s = players.map(p=>hcp85(p.hcp));
+  const effHcps = players.map(p => effectiveTeamHcp(p.hcp));
+  const hcpLabel = hcpMode === 'cero' ? 'Baja a cero · 85% dif.' : 'HCP 85%';
+  const elLeg = document.getElementById('legend-420');
+  if (elLeg) elLeg.textContent = `1º = 4 pts · 2º = 2 pts · 3º = 0 | Empate 1º/2º → reparten (3 c/u) | ${hcpLabel}`;
   document.getElementById('sub420').textContent =
-    players.map((p,i)=>`${p.ini}(${h85s[i]})`).join('  ·  ');
+    players.map((p,i) => `${p.ini}(${effHcps[i]})`).join('  ·  ');
   const tbl = document.getElementById('tbl420');
   tbl.innerHTML = '';
   const thead = document.createElement('thead');
   let th = '<tr><th class="c-fix">H</th><th class="c-fix">Par</th><th class="c-fix">HCP</th>';
   players.forEach((p,i) => {
     const color = i===0?'#ffd700':i===1?'#90ee90':'#87ceeb';
-    th += `<th class="c-p420" style="color:${color}">${p.ini}<br><span style="color:#a8d8a8;font-size:10px">HCP ${h85s[i]}</span></th>`;
+    th += `<th class="c-p420" style="color:${color}">${p.ini}<br><span style="color:#a8d8a8;font-size:10px">HCP ${effHcps[i]}</span></th>`;
   });
   th += '</tr>';
   thead.innerHTML = th; tbl.appendChild(thead);
@@ -1018,7 +1119,7 @@ function calcHole420(h) {
     const isPickup = (raw === 'X');
     const g = parseInt(raw);
     if (!isPickup && (isNaN(g)||g<=0)) return null;
-    const stk = strokesTeam(p.hcp,hcpH);
+    const stk = strokesForTeam(p.hcp,hcpH);
     return { j, net: isPickup ? Infinity : g-stk, pickup: isPickup };
   });
   if (data.some(d=>d===null)) return null;
