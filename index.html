@@ -21,7 +21,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20260815-006";
+const VERSION = "20260815-007";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -1176,11 +1176,13 @@ function setupStickyHeader() {
     fixed.style.left  = wrapRect.left  + 'px';
     fixed.style.width = wrapRect.width + 'px';
     inner.style.width = wrapRect.width + 'px';
-    const realThs  = thead.querySelectorAll('th');
+    // Leer anchos de la primera fila tbody (refleja el ancho real renderizado)
+    const firstRow = tbl.querySelector('tbody tr');
+    const srcCells = firstRow ? firstRow.querySelectorAll('td') : thead.querySelectorAll('th');
     const cloneThs = cloneTbl.querySelectorAll('th');
     let totalW = 0;
-    realThs.forEach((th, i) => {
-      const w = th.getBoundingClientRect().width;
+    srcCells.forEach((cell, i) => {
+      const w = cell.getBoundingClientRect().width;
       if (cloneThs[i]) cloneThs[i].style.width = w + 'px';
       totalW += w;
     });
