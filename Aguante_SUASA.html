@@ -21,7 +21,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20260815-008";
+const VERSION = "20260815-009";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -215,7 +215,7 @@ input.hv:focus { outline:2px solid #ffd700; }
 table.sc { border-collapse:collapse; min-width:100%; font-size:15px; table-layout:fixed; }
 table.sc th { background:#0d3318; color:#a8d8a8; padding:6px 2px; text-align:center; font-size:16px; white-space:nowrap; }
 /* sticky header handled by JS */
-#sticky-sc-header { display:none; position:fixed; left:0; right:0; top:0; z-index:100; overflow:hidden; background:#0d3318; border-bottom:2px solid #3d8a3d; }
+#sticky-sc-header { display:none; position:fixed; top:0; z-index:100; overflow:hidden; background:#0d3318; border-bottom:2px solid #3d8a3d; }
 #sticky-sc-header .sh-inner { overflow:hidden; }
 #sticky-sc-header table.sc { margin:0; }
 table.sc td { padding:4px 2px; text-align:center; white-space:nowrap; }
@@ -1173,21 +1173,22 @@ function setupStickyHeader() {
   let raf = null;
   function syncWidths() {
     const wrapRect = wrap.getBoundingClientRect();
-    fixed.style.left  = wrapRect.left  + 'px';
+    const tblW    = tbl.getBoundingClientRect().width;
+
+    // Outer fixed bar spans the visible part of the scroll container
+    fixed.style.left  = wrapRect.left + 'px';
     fixed.style.width = wrapRect.width + 'px';
+
+    // Inner is the clipping viewport (same width as the visible wrap)
+    // → the clone table overflows it so scrollLeft works
     inner.style.width = wrapRect.width + 'px';
-    // Leer anchos de la primera fila tbody (refleja el ancho real renderizado)
-    const firstRow = tbl.querySelector('tbody tr');
-    const srcCells = firstRow ? firstRow.querySelectorAll('td') : thead.querySelectorAll('th');
-    const cloneThs = cloneTbl.querySelectorAll('th');
-    let totalW = 0;
-    srcCells.forEach((cell, i) => {
-      const w = cell.getBoundingClientRect().width;
-      if (cloneThs[i]) cloneThs[i].style.width = w + 'px';
-      totalW += w;
-    });
-    cloneTbl.style.width    = totalW + 'px';
-    cloneTbl.style.minWidth = '0';        // anula min-width:100% heredado de .sc
+
+    // Clone table: SAME total width as the real table, minWidth:0
+    // so table-layout:fixed distributes column space identically
+    cloneTbl.style.width    = tblW + 'px';
+    cloneTbl.style.minWidth = '0';
+
+    // Sync horizontal scroll
     inner.scrollLeft = wrap.scrollLeft;
   }
 
