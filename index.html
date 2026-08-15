@@ -29,7 +29,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20260815-012";
+const VERSION = "20260815-013";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -440,7 +440,7 @@ td.mc-lose { color:#555 !important; }
     <div class="sc-wrap">
       <table class="sc" id="tbl-match"></table>
     </div>
-    <p class="sec-legend">Menor neto gana el hoyo = 1 pt &nbsp;&middot;&nbsp; Empate = 0 pts &nbsp;|&nbsp; HCP 85%</p>
+    <p class="sec-legend" id="legend-match">Menor neto gana el hoyo = 1 pt &nbsp;&middot;&nbsp; Empate = 0 pts &nbsp;|&nbsp; HCP 85%</p>
   </div>
 
   <!-- 4 - 2 - 0 (3 jugadores) -->
@@ -735,10 +735,9 @@ function startGame() {
   hcpMode  = 'completo';
   if (players.length === 4) {
     showModeModal(1);
-  } else if (players.length === 3) {
-    showModeModal(2);
   } else {
-    finishStartGame();
+    // 3 o 2 jugadores: saltar directo al paso HCP
+    showModeModal(2);
   }
 }
 
@@ -1017,16 +1016,19 @@ function recalcTeam() {
 
 function buildMatchSection() {
   document.getElementById('section-match').style.display = 'block';
-  const h85s = players.map(p => hcp85(p.hcp));
+  const effHcps = players.map(p => effectiveTeamHcp(p.hcp));
+  const hcpLabel = hcpMode === 'cero' ? 'Baja a cero · 85% dif.' : 'HCP 85%';
   document.getElementById('sub-match').textContent =
-    `${players[0].ini} (HCP ${h85s[0]})  vs  ${players[1].ini} (HCP ${h85s[1]})`;
+    `${players[0].ini} (HCP ${effHcps[0]})  vs  ${players[1].ini} (HCP ${effHcps[1]})`;
+  const elLegend = document.getElementById('legend-match');
+  if (elLegend) elLegend.textContent = `Menor neto gana el hoyo = 1 pt · Empate = 0 pts | ${hcpLabel}`;
   const tbl = document.getElementById('tbl-match');
   tbl.innerHTML = '';
   const thead = document.createElement('thead');
   const colors = ['#ffd700','#87ceeb'];
   let th = '<tr><th class="c-fix">H</th><th class="c-fix">Par</th><th class="c-fix">HCP</th>';
   players.forEach((p,i) =>
-    th += `<th class="c-match" style="color:${colors[i]}">${p.ini}<br><span style="color:#a8d8a8;font-size:10px">HCP ${h85s[i]}</span></th>`
+    th += `<th class="c-match" style="color:${colors[i]}">${p.ini}<br><span style="color:#a8d8a8;font-size:10px">HCP ${effHcps[i]}</span></th>`
   );
   th += '</tr>';
   thead.innerHTML = th; tbl.appendChild(thead);
@@ -1062,7 +1064,7 @@ function calcHoleMatch(h) {
     const isPickup = (raw==='X');
     const g = parseInt(raw);
     if (!isPickup&&(isNaN(g)||g<=0)) return null;
-    return isPickup ? Infinity : g - strokesTeam(p.hcp,hcpH);
+    return isPickup ? Infinity : g - strokesForTeam(p.hcp,hcpH);
   });
   if (nets.some(n=>n===null)) return null;
   if (nets[0] < nets[1]) return [1,0];
