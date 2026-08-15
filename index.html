@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-9YTFN35LGM"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-9YTFN35LGM');
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -21,7 +29,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20260815-010";
+const VERSION = "20260815-012";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -38,9 +46,41 @@ const VERSION = "20260815-010";
 })();
 </script>
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    document.title = 'SUAS app';
-  });
+// ── Google Analytics offline queue ──────────────────────────────────────────
+const GA_MP_URL = 'https://www.google-analytics.com/mp/collect'
+               + '?measurement_id=G-9YTFN35LGM&api_secret=bjgH2-XJRRyc4lat6TVl-w';
+const GA_QUEUE_KEY = 'ga_queue_suasa';
+const GA_CLIENT_KEY = 'ga_client_suasa';
+
+function gaClientId() {
+  let id = localStorage.getItem(GA_CLIENT_KEY);
+  if (!id) { id = Math.random().toString(36).slice(2) + '.' + Date.now(); localStorage.setItem(GA_CLIENT_KEY, id); }
+  return id;
+}
+
+function gaEnqueue(eventName, params) {
+  const queue = JSON.parse(localStorage.getItem(GA_QUEUE_KEY) || '[]');
+  queue.push({ name: eventName, params: Object.assign({ timestamp_micros: Date.now() * 1000 }, params) });
+  localStorage.setItem(GA_QUEUE_KEY, JSON.stringify(queue));
+}
+
+function gaFlush() {
+  const queue = JSON.parse(localStorage.getItem(GA_QUEUE_KEY) || '[]');
+  if (!queue.length) return;
+  fetch(GA_MP_URL, {
+    method: 'POST',
+    body: JSON.stringify({ client_id: gaClientId(), events: queue })
+  }).then(r => { if (r.ok || r.status === 204) localStorage.removeItem(GA_QUEUE_KEY); })
+    .catch(() => {});
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.title = 'SUAS app';
+  gaEnqueue('app_open', { app: 'SUASA' });
+  gaFlush();
+});
+
+window.addEventListener('online', gaFlush);
 </script>
 <style>
 * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
