@@ -1,11 +1,24 @@
 {
-  "name": "S.U.A.S.A.",
-  "short_name": "SUASA",
-  "start_url": "/",
+  "name": "SUASapp",
+  "short_name": "SUASapp",
+  "description": "Scorer de Golf SUASA",
+  "start_url": "./Aguante_SUASA.html",
   "display": "standalone",
-  "background_color": "#1a472a",
-  "theme_color": "#1a472a",
+  "background_color": "#1B5E20",
+  "theme_color": "#1B5E20",
+  "orientation": "portrait",
   "icons": [
-    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }
