@@ -21,7 +21,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="SUASA">
+<meta name="apple-mobile-web-app-title" content="SUASapp">
 <script>
 // ── Service Worker (PWA sin badge de Chrome) ────────────────────────────────
 if ('serviceWorker' in navigator) {
@@ -29,7 +29,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20260815-013";
+const VERSION = "20260815-016";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -75,7 +75,7 @@ function gaFlush() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  document.title = 'SUAS app';
+  document.title = 'SUASapp';
   gaEnqueue('app_open', { app: 'SUASA' });
   gaFlush();
 });
@@ -308,13 +308,23 @@ td.mc-lose { color:#555 !important; }
 .sec-sub { font-size:11px; color:#a8d8a8; text-align:center; margin-bottom:10px; }
 .sec-legend { font-size:10px; color:#666; text-align:center; margin-top:6px; }
 
+.btn-new-row {
+  display:flex; gap:10px; margin:18px 0 0; justify-content:center;
+}
 .btn-new {
-  display:block; margin:18px auto 0; padding:12px 32px;
-  background:#2d6a2d; color:#fff; font-size:16px; font-weight:bold;
+  flex:1; max-width:200px; padding:12px 16px;
+  background:#2d6a2d; color:#fff; font-size:15px; font-weight:bold;
   border:none; border-radius:8px; cursor:pointer;
   touch-action:manipulation; -webkit-user-select:none; user-select:none;
 }
 .btn-new:active { background:#3d8a3d; }
+.btn-share {
+  flex:1; max-width:200px; padding:12px 16px;
+  background:#1a5a3a; color:#25d366; font-size:15px; font-weight:bold;
+  border:2px solid #25d366; border-radius:8px; cursor:pointer;
+  touch-action:manipulation; -webkit-user-select:none; user-select:none;
+}
+.btn-share:active { background:#0d3320; }
 
 /* ── MODAL MODO DE JUEGO ── */
 .mode-btn {
@@ -410,7 +420,7 @@ td.mc-lose { color:#555 !important; }
     <div class="m-mod">&#x26A1; Con 3 jugadores:</div>
     <div class="m-mod-desc">&#x201C;4-2-0&#x201D; &mdash; 4 ptos mejor pelota<br>del hoyo &middot; 2 ptos la segunda.<br>Opci&#xF3;n de HCP completo o bajar a cero.</div>
     <div class="m-mod">&#x1F94A; Con 2 jugadores:</div>
-    <div class="m-mod-desc">Match &mdash; 1 pto por cada hoyo ganado.</div>
+    <div class="m-mod-desc">Match &mdash; 1 pto por cada hoyo ganado.<br>Opci&#xF3;n de jugar con HCP completo o bajar a cero.</div>
     <button class="modal-close" onclick="closeInstructions()">Cerrar</button>
   </div>
 </div>
@@ -453,7 +463,10 @@ td.mc-lose { color:#555 !important; }
     <p class="sec-legend" id="legend-420">1&#xBA; = 4 pts &middot; 2&#xBA; = 2 pts &middot; 3&#xBA; = 0 &nbsp;|&nbsp; Empate 1&#xBA;/2&#xBA; &rarr; reparten (3 c/u) &nbsp;|&nbsp; HCP 85%</p>
   </div>
 
-  <button class="btn-new" onclick="newGame()">&#x21A9; &nbsp;Nueva Partida</button>
+  <div class="btn-new-row">
+    <button class="btn-share" onclick="shareCard()">📤 Compartir Tarjeta</button>
+    <button class="btn-new"   onclick="newGame()">&#x21A9; Nueva Partida</button>
+  </div>
 </div>
 
 <!-- ── MODAL MODO DE JUEGO ── -->
@@ -771,6 +784,66 @@ function finishStartGame() {
   document.getElementById('setup').style.display = 'none';
   document.getElementById('scorecard').style.display = 'block';
   saveState();
+}
+
+function shareCard() {
+  const btn = document.querySelector('.btn-share');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '⏳ Capturando...';
+  btn.disabled = true;
+
+  function doCapture() {
+    const el = document.getElementById('scorecard');
+    html2canvas(el, {
+      backgroundColor: '#0d3318',
+      scale: 2,
+      useCORS: true,
+      logging: false
+    }).then(function(canvas) {
+      // Añadir pie "SUASapp ⛳" en el canvas
+      const ctx = canvas.getContext('2d');
+      const hoy = new Date().toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' });
+      const pie = 'SUASapp ⛳  ' + hoy;
+      ctx.font = 'italic bold ' + Math.round(canvas.width * 0.030) + 'px sans-serif';
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      const tw = ctx.measureText(pie).width;
+      const px = canvas.width - tw - 18, py = canvas.height - 12;
+      ctx.fillText(pie, px + 2, py + 2);
+      ctx.fillStyle = '#a8d8a8';
+      ctx.fillText(pie, px, py);
+
+      canvas.toBlob(function(blob) {
+        btn.innerHTML = orig;
+        btn.disabled = false;
+        const file = new File([blob], 'SUASapp-tarjeta.png', { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          navigator.share({ files: [file], title: 'SUASapp — Tarjeta de Score' }).catch(function() {});
+        } else {
+          // fallback: descargar
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = 'SUASapp-tarjeta.png';
+          document.body.appendChild(a); a.click();
+          document.body.removeChild(a);
+          setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+        }
+      }, 'image/png');
+    }).catch(function(e) {
+      btn.innerHTML = orig;
+      btn.disabled = false;
+      console.error('html2canvas:', e);
+    });
+  }
+
+  if (window.html2canvas) {
+    doCapture();
+  } else {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    s.onload = doCapture;
+    s.onerror = function() { btn.innerHTML = orig; btn.disabled = false; };
+    document.head.appendChild(s);
+  }
 }
 
 function newGame() {
