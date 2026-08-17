@@ -31,7 +31,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20260817-019";
+const VERSION = "20260817-020";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -898,8 +898,16 @@ function newGame() {
   _savedGameMode = null;
   _savedHcpMode  = null;
   try { localStorage.removeItem(STATE_KEY); } catch(e) {}
+  // Borrar iniciales y HCP de los 4 jugadores
+  for (let i = 0; i < 4; i++) {
+    const ini = document.getElementById(`ini${i}`);
+    const hcp = document.getElementById(`hcp${i}`);
+    if (ini) ini.value = '';
+    if (hcp) hcp.value = '';
+  }
   document.getElementById('scorecard').style.display = 'none';
   document.getElementById('setup').style.display = 'block';
+  window.scrollTo(0, 0);
 }
 
 function buildScorecard() {
