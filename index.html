@@ -31,7 +31,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20260816-018";
+const VERSION = "20260817-019";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -311,19 +311,26 @@ td.mc-lose { color:#555 !important; }
 .sec-legend { font-size:10px; color:#666; text-align:center; margin-top:6px; }
 
 .btn-new-row {
-  display:flex; gap:10px; margin:18px 0 0; justify-content:center;
+  display:flex; gap:8px; margin:18px 0 0; justify-content:center;
 }
 .btn-new {
-  flex:1; max-width:200px; padding:12px 16px;
-  background:#2d6a2d; color:#fff; font-size:15px; font-weight:bold;
-  border:none; border-radius:8px; cursor:pointer;
+  flex:1; padding:10px 8px;
+  background:#2d6a2d; color:#fff; font-size:13px; font-weight:bold;
+  border:none; border-radius:8px; cursor:pointer; line-height:1.3;
   touch-action:manipulation; -webkit-user-select:none; user-select:none;
 }
 .btn-new:active { background:#3d8a3d; }
+.btn-back {
+  flex:1; padding:10px 8px;
+  background:#1a3a5a; color:#7ec8ff; font-size:13px; font-weight:bold;
+  border:2px solid #7ec8ff; border-radius:8px; cursor:pointer; line-height:1.3;
+  touch-action:manipulation; -webkit-user-select:none; user-select:none;
+}
+.btn-back:active { background:#2a4a6a; }
 .btn-share {
-  flex:1; max-width:200px; padding:12px 16px;
-  background:#1a5a3a; color:#25d366; font-size:15px; font-weight:bold;
-  border:2px solid #25d366; border-radius:8px; cursor:pointer;
+  flex:1; padding:10px 8px;
+  background:#1a5a3a; color:#25d366; font-size:13px; font-weight:bold;
+  border:2px solid #25d366; border-radius:8px; cursor:pointer; line-height:1.3;
   touch-action:manipulation; -webkit-user-select:none; user-select:none;
 }
 .btn-share:active { background:#0d3320; }
@@ -369,7 +376,7 @@ td.mc-lose { color:#555 !important; }
   <div id="save-toast">&#x2705; Guardado</div>
   <div class="btn-bottom-row">
     <button class="btn-instrucciones" onclick="openInstructions()">&#x1F4CB; Instrucciones</button>
-    <button class="btn-start" onclick="startGame()">COMENZAR &nbsp;&#9658;</button>
+    <button class="btn-start" onclick="startGame()">ANOTAR &nbsp;&#9658;</button>
   </div>
 </div>
 
@@ -466,8 +473,9 @@ td.mc-lose { color:#555 !important; }
   </div>
 
   <div class="btn-new-row">
-    <button class="btn-share" onclick="shareCard()">📤 Compartir Tarjeta</button>
-    <button class="btn-new"   onclick="newGame()">&#x21A9; Nueva Partida</button>
+    <button class="btn-share" onclick="shareCard()">📤 Compartir<br>Tarjeta</button>
+    <button class="btn-back"  onclick="goBack()">&#x21A9; Regresar</button>
+    <button class="btn-new"   onclick="newGame()">&#x21A9; Nueva<br>Partida</button>
   </div>
 </div>
 
@@ -587,6 +595,11 @@ let gameMode = '1y2';      // '1y2' | 'mejor'
 let hcpMode  = 'completo'; // 'completo' | 'cero'
 let _tmpCourseName = '';
 const STATE_KEY = 'suasa_state_v1';
+
+// ── Regresar: preservar scores al volver al setup ───────────────────────────
+let _pendingScores  = null;  // scores capturados al presionar Regresar
+let _savedGameMode  = null;
+let _savedHcpMode   = null;
 
 function saveState() {
   if (document.getElementById('scorecard').style.display === 'none') return;
@@ -746,13 +759,20 @@ function startGame() {
     return [par, isNaN(hv)||hv<1||hv>18 ? base[h][1] : hv];
   });
   _tmpCourseName = name;
-  gameMode = '1y2';
-  hcpMode  = 'completo';
-  if (players.length === 4) {
-    showModeModal(1);
+  if (_pendingScores !== null) {
+    // Viene de "Regresar": reusar modalidad ya elegida, sin mostrar modal
+    gameMode = _savedGameMode || '1y2';
+    hcpMode  = _savedHcpMode  || 'completo';
+    finishStartGame();
   } else {
-    // 3 o 2 jugadores: saltar directo al paso HCP
-    showModeModal(2);
+    gameMode = '1y2';
+    hcpMode  = 'completo';
+    if (players.length === 4) {
+      showModeModal(1);
+    } else {
+      // 3 o 2 jugadores: saltar directo al paso HCP
+      showModeModal(2);
+    }
   }
 }
 
@@ -785,6 +805,15 @@ function finishStartGame() {
   if (players.length === 2) buildMatchSection();
   document.getElementById('setup').style.display = 'none';
   document.getElementById('scorecard').style.display = 'block';
+  // Restaurar scores si venimos de "Regresar"
+  if (_pendingScores !== null) {
+    Object.entries(_pendingScores).forEach(([key, val]) => {
+      const el = document.getElementById(`g${key}`);
+      if (el) el.value = val;
+    });
+    _pendingScores = null;
+    recalcAll();
+  }
   saveState();
 }
 
@@ -848,7 +877,26 @@ function shareCard() {
   }
 }
 
+function goBack() {
+  // Captura scores actuales del DOM para restaurarlos después de "Anotar"
+  _pendingScores = {};
+  players.forEach((p, j) => {
+    for (let h = 0; h < 18; h++) {
+      const el = document.getElementById(`g${j}_${h}`);
+      if (el && el.value.trim() !== '') _pendingScores[`${j}_${h}`] = el.value.trim();
+    }
+  });
+  _savedGameMode = gameMode;
+  _savedHcpMode  = hcpMode;
+  document.getElementById('scorecard').style.display = 'none';
+  document.getElementById('setup').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
 function newGame() {
+  _pendingScores = null;
+  _savedGameMode = null;
+  _savedHcpMode  = null;
   try { localStorage.removeItem(STATE_KEY); } catch(e) {}
   document.getElementById('scorecard').style.display = 'none';
   document.getElementById('setup').style.display = 'block';
