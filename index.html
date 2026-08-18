@@ -31,7 +31,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20260817-020";
+const VERSION = "20260818-001";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -39,7 +39,7 @@ const VERSION = "20260817-020";
       const m = html.match(/const VERSION = "([^"]+)"/);
       if (!m) return;
       if (m[1] !== VERSION) {
-        location.reload(true);
+        location.replace(location.pathname + "?_v=" + m[1] + "&_t=" + Date.now());
       } else {
         sessionStorage.setItem('_ver', VERSION);
       }
@@ -511,7 +511,7 @@ td.mc-lose { color:#555 !important; }
 const COURSES = {
   "CNSI": [
     [4, 3],[3,15],[4,17],[4, 9],[4, 5],[5, 1],[4, 7],[3,13],[4,11],
-    [4,14],[4, 6],[5,10],[4,12],[3,2],[5, 8],[4, 4],[3,18],[4,16]
+    [4,14],[4, 6],[5,10],[4,12],[3, 2],[5, 8],[4, 4],[3,18],[4,16]
   ],
   "Pilara": [
     [5, 3],[3,13],[4, 5],[4,11],[4,15],[4, 9],[5, 1],[3,17],[4, 7],
@@ -551,7 +551,7 @@ const COURSES = {
   ],
   "Pinguinos": [
     [4, 7],[5, 3],[3,17],[4,11],[4, 5],[3,15],[4, 9],[5, 1],[4,13],
-    [4,10],[5, 4],[3,18],[4,14],[3,16],[4,8],[5, 2],[3,12],[5,6]
+    [4,10],[5, 4],[3,18],[4,14],[3,16],[4, 8],[5, 2],[3,12],[5, 6]
   ],
   "Golfers Country Club": [
     [4, 5],[4, 3],[4,13],[5,17],[3,15],[4, 7],[3, 9],[4,11],[5, 1],
@@ -561,7 +561,14 @@ const COURSES = {
     [4, 5],[3, 9],[4, 7],[3,17],[4, 3],[5, 1],[4,15],[4,11],[3,13],
     [4, 6],[3,10],[4, 8],[3,18],[4, 4],[5, 2],[4,16],[4,12],[3,14]
   ],
+  "Potrerillo de Larreta": [
+    [4,11],[5,13],[3,17],[5, 1],[3, 7],[4, 3],[3,15],[5, 5],[4, 9],
+    [4, 2],[4, 6],[4,18],[5,14],[3,16],[4, 4],[3,12],[5, 8],[4,10]
+  ],
 };
+
+
+
 
 function strokes(hcp, hcpH) {
   return Math.floor(hcp/18) + (hcp%18 >= hcpH ? 1 : 0);
