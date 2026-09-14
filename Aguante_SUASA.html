@@ -23,11 +23,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SUASapp">
 <script>
-// ── Service Worker inline (PWA sin badge de Chrome) ────────────────────────
+// ── Service Worker ──────────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
-  const swCode = `self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>e.respondWith(fetch(e.request)));`;
-  const swBlob = new Blob([swCode], {type: 'application/javascript'});
-  navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+  navigator.serviceWorker.register('/SUASA/sw.js').catch(() => {});
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
