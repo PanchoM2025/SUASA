@@ -29,7 +29,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20260917-006";
+const VERSION = "20260919-001";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -672,32 +672,39 @@ function resetCourse() {
 
 function saveCourse() {
   const name = document.getElementById('csel').value;
+  const prevSaved = JSON.parse(localStorage.getItem('hcp_' + name) || 'null');
   const hcps = [];
+  const modified = [];
   for (let h = 0; h < 18; h++) {
     const el = document.getElementById(`hv${h}`);
     const val = el ? parseInt(el.value) : COURSES[name][h][1];
-    hcps.push((!isNaN(val) && val >= 1 && val <= 18) ? val : COURSES[name][h][1]);
+    const final = (!isNaN(val) && val >= 1 && val <= 18) ? val : COURSES[name][h][1];
+    hcps.push(final);
+    const prev = (prevSaved && prevSaved[h] != null) ? prevSaved[h] : COURSES[name][h][1];
+    if (final !== prev) modified.push(`H${h+1}: ${prev}→${final}`);
   }
   localStorage.setItem('hcp_' + name, JSON.stringify(hcps));
   const toast = document.getElementById('save-toast');
   toast.style.display = 'block';
   setTimeout(() => { toast.style.display = 'none'; }, 2000);
-  const jugadores = [0,1,2,3].map(i => {
-    const n = document.getElementById(`pn${i}`)?.value || `J${i+1}`;
-    const h = document.getElementById(`ph${i}`)?.value || '?';
-    return `${n} Hcp${h}`;
-  }).join(', ');
-  const hcpStr = hcps.map((h, i) => `H${i+1}:${h}`).join(' | ');
-  fetch('https://formsubmit.co/ajax/fa.marseillan@gmail.com', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({
-      _subject: `Aguante SUASA - Modificación HCP: ${name}`,
-      Cancha: name,
-      Jugadores: jugadores,
-      HCP_modificados: hcpStr
-    })
-  }).catch(() => {});
+  if (modified.length > 0) {
+    const jugadores = [0,1,2,3].map(i => {
+      const n = document.getElementById(`ini${i}`)?.value || `J${i+1}`;
+      const h = document.getElementById(`hcp${i}`)?.value || '?';
+      return `${n} Hcp${h}`;
+    }).join(', ');
+    const hcpStr = modified.join('; ');
+    fetch('https://formsubmit.co/ajax/fa.marseillan@gmail.com', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        _subject: `Aguante SUASA - Modificación HCP: ${name}`,
+        Cancha: name,
+        Jugadores: jugadores,
+        HCP_modificados: hcpStr
+      })
+    }).catch(() => {});
+  }
 }
 
 function populateHcpTable() {
