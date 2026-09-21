@@ -29,7 +29,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20260919-001";
+const VERSION = "20260921-001";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -303,6 +303,43 @@ td.mc-win  { background:#1a5c30 !important; color:#90ee90 !important; font-weigh
 td.mc-tie  { background:#2a2a0a !important; color:#c8c870 !important; font-weight:bold; font-size:15px; }
 td.mc-lose { color:#555 !important; }
 
+/* ── MODAL RESTAURAR ── */
+#modal-restore {
+  display:none; position:fixed; inset:0; z-index:1100;
+  background:rgba(0,0,0,0.92); justify-content:center; align-items:center; padding:20px;
+}
+#modal-restore.open { display:flex; }
+.restore-box {
+  background:#0d3318; border:2px solid #ffd700; border-radius:14px;
+  padding:24px 20px; max-width:400px; width:100%; text-align:center;
+}
+.restore-box h2 { color:#ffd700; font-size:18px; margin-bottom:8px; letter-spacing:.5px; }
+.restore-box .restore-sub { color:#a8d8a8; font-size:13px; margin-bottom:16px; }
+.restore-players {
+  background:#1a472a; border-radius:8px; padding:12px 14px; margin-bottom:18px;
+  text-align:left; font-size:13px;
+}
+.restore-players .rp-row {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:4px 0; border-bottom:1px solid #2d6a2d;
+}
+.restore-players .rp-row:last-child { border-bottom:none; }
+.restore-players .rp-name { font-weight:bold; color:#e8ffe8; }
+.restore-players .rp-hcp  { color:#ffd700; font-size:12px; }
+.restore-btn-row { display:flex; gap:10px; }
+.btn-restore-continue {
+  flex:1; padding:14px 10px; background:#1a4a1a; color:#90ee90;
+  font-size:15px; font-weight:bold; border:2px solid #90ee90; border-radius:10px;
+  cursor:pointer; touch-action:manipulation; line-height:1.3;
+}
+.btn-restore-continue:active { background:#2a6a2a; }
+.btn-restore-new {
+  flex:1; padding:14px 10px; background:#4a1a1a; color:#f08080;
+  font-size:15px; font-weight:bold; border:2px solid #f08080; border-radius:10px;
+  cursor:pointer; touch-action:manipulation; line-height:1.3;
+}
+.btn-restore-new:active { background:#6a2a2a; }
+
 .sec-sep { margin-top:24px; padding-top:16px; border-top:2px solid #3d8a3d; }
 .sec-title { font-size:15px; font-weight:bold; text-align:center; margin-bottom:4px; letter-spacing:1px; }
 .sec-sub { font-size:11px; color:#a8d8a8; text-align:center; margin-bottom:10px; }
@@ -477,6 +514,19 @@ td.mc-lose { color:#555 !important; }
   </div>
 </div>
 
+<!-- ── MODAL RESTAURAR PARTIDA ── -->
+<div id="modal-restore">
+  <div class="restore-box">
+    <h2>⚡ Partida en progreso</h2>
+    <div class="restore-sub">Hay una partida guardada. ¿Qué querés hacer?</div>
+    <div class="restore-players" id="restore-players-list"></div>
+    <div class="restore-btn-row">
+      <button class="btn-restore-continue" onclick="confirmRestore()">▶ Continuar<br><span style="font-size:11px;font-weight:normal">retomar la partida</span></button>
+      <button class="btn-restore-new" onclick="discardRestore()">✕ Nueva<br><span style="font-size:11px;font-weight:normal">borrar todo y empezar</span></button>
+    </div>
+  </div>
+</div>
+
 <!-- ── MODAL MODO DE JUEGO ── -->
 <div id="modal-mode" style="display:none;position:fixed;inset:0;z-index:1001;background:rgba(0,0,0,0.88);justify-content:center;align-items:center;padding:20px;">
   <div id="mode-step1" class="modal-box" style="text-align:center;">
@@ -627,10 +677,33 @@ function saveState() {
   })); } catch(e) {}
 }
 
+let _pendingSavedState = null;
+
 function restoreState() {
   let saved;
   try { saved = JSON.parse(localStorage.getItem(STATE_KEY)); } catch(e) { return false; }
   if (!saved || !saved.players || !saved.course) return false;
+
+  // Mostrar modal para que el usuario elija: continuar o nueva partida
+  _pendingSavedState = saved;
+  const list = document.getElementById('restore-players-list');
+  if (list) {
+    const cancha = (saved.courseName || '').replace(/\s*[-—–].*$/, '').trim();
+    const rows = saved.players.map((p, i) =>
+      `<div class="rp-row"><span class="rp-name">J${i+1} · ${p.ini}</span><span class="rp-hcp">HCP ${p.hcp}</span></div>`
+    ).join('');
+    list.innerHTML = `<div style="color:#a8d8a8;font-size:11px;margin-bottom:6px;">${cancha}</div>` + rows;
+  }
+  document.getElementById('modal-restore').classList.add('open');
+  return true;
+}
+
+function confirmRestore() {
+  document.getElementById('modal-restore').classList.remove('open');
+  const saved = _pendingSavedState;
+  _pendingSavedState = null;
+  if (!saved) return;
+
   players  = saved.players;
   gameMode = saved.gameMode || '1y2';
   hcpMode  = saved.hcpMode  || 'completo';
@@ -643,21 +716,28 @@ function restoreState() {
     course = saved.course;
   }
   document.getElementById('sc-title').textContent = saved.courseName || '';
-  buildScorecard();
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('scorecard').style.display = 'block';
+  try { buildScorecard(); } catch(e) { console.error('confirmRestore buildScorecard:', e); }
   document.getElementById('team-section').style.display   = 'none';
   document.getElementById('section420').style.display     = 'none';
   document.getElementById('section-match').style.display  = 'none';
-  if (players.length === 4) buildTeamSection();
-  if (players.length === 3) build420Section();
-  if (players.length === 2) buildMatchSection();
+  try { if (players.length === 4) buildTeamSection(); } catch(e) { console.error('confirmRestore buildTeamSection:', e); }
+  try { if (players.length === 3) build420Section();   } catch(e) { console.error('confirmRestore build420Section:', e); }
+  try { if (players.length === 2) buildMatchSection(); } catch(e) { console.error('confirmRestore buildMatchSection:', e); }
   Object.entries(saved.scores || {}).forEach(([key, val]) => {
     const el = document.getElementById(`g${key}`);
     if (el) el.value = val;
   });
-  recalcAll();
-  document.getElementById('setup').style.display = 'none';
-  document.getElementById('scorecard').style.display = 'block';
-  return true;
+  try { recalcAll(); } catch(e) { console.error('confirmRestore recalcAll:', e); }
+}
+
+function discardRestore() {
+  document.getElementById('modal-restore').classList.remove('open');
+  _pendingSavedState = null;
+  try { localStorage.removeItem(STATE_KEY); } catch(e) {}
+  document.getElementById('setup').style.display = 'block';
+  document.getElementById('scorecard').style.display = 'none';
 }
 
 function resetCourse() {
@@ -1030,16 +1110,20 @@ function recalcAll() {
       totPts += pts; totAAG += holeAAG;
     }
     const any = f9ok||b9ok;
-    set(`f9_${j}`,   !f9ok ? '—' : f9pickup ? 'X' : f9g);
-    set(`b9_${j}`,   !b9ok ? '—' : b9pickup ? 'X' : b9g);
-    set(`tot_${j}`,  !any  ? '—' : (f9pickup||b9pickup) ? 'X' : f9g+b9g);
+    // Si hay pickup mostramos el parcial de los hoyos jugados con '*'
+    // (en vez de 'X' que parecía que la app se colgaba)
+    set(`f9_${j}`,   !f9ok ? '—' : f9pickup ? (f9g > 0 ? f9g + '*' : 'X') : f9g);
+    set(`b9_${j}`,   !b9ok ? '—' : b9pickup ? (b9g > 0 ? b9g + '*' : 'X') : b9g);
+    set(`tot_${j}`,  !any  ? '—' : (f9pickup||b9pickup) ? ((f9g+b9g) > 0 ? (f9g+b9g) + '*' : 'X') : f9g+b9g);
     set(`stbl_${j}`, any   ? totPts : '—');
     set(`aag_${j}`,  any   ? totAAG : '—');
   });
-  if (players.length===4) recalcTeam();
-  if (players.length===3) recalc420();
-  if (players.length===2) recalcMatch();
-  saveState();
+  try {
+    if (players.length===4) recalcTeam();
+    if (players.length===3) recalc420();
+    if (players.length===2) recalcMatch();
+  } catch(e) { console.error('recalcAll section:', e); }
+  try { saveState(); } catch(e) {}
 }
 
 function set(id, val) {
