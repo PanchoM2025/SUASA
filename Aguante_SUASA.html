@@ -300,6 +300,8 @@ td.fc-0 { color:#aaa !important; }
 /* v2026-10-03: scores enteros + 4-2-0 acumulado ida/vuelta/match */
 tr.r-acc td { background:#0a2414; color:#ffd700; font-size:13px; font-weight:bold; padding:1px 2px; border-bottom:1px solid #3d8a3d; }
 tr.r-acc td.acc-0 { color:#5f8f6a; font-weight:normal; }
+tr.r-neto td { background:#0a2a14; color:#ffd700; font-weight:bold; border-top:2px solid #ffd700; border-bottom:2px solid #ffd700; }
+tr.r-neto td.acc-0 { color:#5f8f6a; }
 input.g.bad { outline:2px solid #ff3b30 !important; }
 
 /* ── COLORES MATCH ── */
@@ -1411,6 +1413,8 @@ function build420Section() {
     players.forEach((_,j) => html += `<td class="c-p420" id="p4_${j}_${h}">·</td>`);
     tr.innerHTML = html; tbody.appendChild(tr);
     // Fila intercalada: diferencia acumulada contra el último (oculta hasta que el hoyo se juegue)
+    // En el 9 y el 18 no va: el neto se muestra en la fila Ida / Vuelta
+    if (h === 8 || h === 17) return;
     const tra = document.createElement('tr');
     tra.className = 'r-acc'; tra.id = `p4acc_${h}`; tra.style.display = 'none';
     let ha = '<td colspan="3"></td>';
@@ -1424,10 +1428,10 @@ function build420Section() {
     tr.innerHTML = html; tbody.appendChild(tr);
   }
   for (let h=0; h<9; h++) addHole420(h);
-  addRow420('Ida',    j=>`p4f9_${j}`, 'r-sub');
+  addRow420('Ida',    j=>`p4f9_${j}`, 'r-neto');
   for (let h=9; h<18; h++) addHole420(h);
-  addRow420('Vuelta', j=>`p4b9_${j}`, 'r-sub');
-  addRow420('TOTAL',       j=>`p4tot_${j}`, 'r-total');
+  addRow420('Vuelta', j=>`p4b9_${j}`, 'r-neto');
+  addRow420('TOTAL NETO',  j=>`p4tot_${j}`, 'r-total');
   addRow420('Pos. Ida',    j=>`p4dF_${j}`, 'r-diff');
   addRow420('Pos. Vuelta', j=>`p4dB_${j}`, 'r-sub');
   addRow420('Pos. Match',  j=>`p4dT_${j}`, 'r-sub');
@@ -1744,9 +1748,18 @@ function recalc420() {
   const tot = f9.map((v,j)=>v+b9[j]);
   const setP4=(id,val)=>{ const el=document.getElementById(id); if(el){el.textContent=val;el.className='c-p420';} };
   players.forEach((_,j)=>{
-    setP4(`p4f9_${j}`,  f9ok?f9[j]:'—');
-    setP4(`p4b9_${j}`,  b9ok?b9[j]:'—');
-    setP4(`p4tot_${j}`, (f9ok||b9ok)?tot[j]:'—');
+    // Ida / Vuelta: neto (diferencia contra el último). TOTAL NETO: neto de ida + vuelta.
+    const neto = arr => { const m = Math.min(...arr); return arr.map(v => v - m); };
+    const nF = neto(f9), nB = neto(b9);
+    const nT = neto(nF.map((v,k) => (f9ok ? v : 0) + (b9ok ? nB[k] : 0)));
+    const fmt = (id, d, ok) => {
+      const el = document.getElementById(id); if (!el) return;
+      el.className = 'c-p420' + (ok && d === 0 ? ' acc-0' : '');
+      el.textContent = !ok ? '—' : (d === 0 ? '—' : d);
+    };
+    fmt(`p4f9_${j}`,  nF[j], f9ok);
+    fmt(`p4b9_${j}`,  nB[j], b9ok);
+    fmt(`p4tot_${j}`, nT[j], f9ok || b9ok);
   });
   if (!(f9ok||b9ok)) { players.forEach((_,j)=>['p4dF_','p4dB_','p4dT_'].forEach(k=>setP4(k+j,'—'))); return; }
   // Tres premios independientes: Ida, Vuelta y Match (18 hoyos). Se rankea 1°/2°/3°.
