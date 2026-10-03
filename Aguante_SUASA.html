@@ -297,6 +297,10 @@ td.fc-3 { background:#5a4600 !important; color:#c8a500 !important; font-weight:b
 td.fc-2 { background:#1a5c30 !important; color:#90ee90 !important; font-weight:bold; font-size:17px; }
 td.fc-1 { background:#143d22 !important; color:#c8e6c9 !important; font-weight:bold; font-size:16px; }
 td.fc-0 { color:#aaa !important; }
+/* v2026-10-03: scores enteros + 4-2-0 acumulado ida/vuelta/match */
+tr.r-acc td { background:#0a2414; color:#ffd700; font-size:13px; font-weight:bold; padding:1px 2px; border-bottom:1px solid #3d8a3d; }
+tr.r-acc td.acc-0 { color:#5f8f6a; font-weight:normal; }
+input.g.bad { outline:2px solid #ff3b30 !important; }
 
 /* ── COLORES MATCH ── */
 td.mc-win  { background:#1a5c30 !important; color:#90ee90 !important; font-weight:bold; font-size:17px; }
@@ -559,8 +563,8 @@ td.mc-lose { color:#555 !important; }
 
 const COURSES = {
   "Campo Chico": [
-    [4, 1],[4,13],[5, 3],[3, 7],[5, 5],[4,17],[4,15],[3, 9],[4,11],
-    [4, 4],[3,10],[4, 8],[4,14],[4,18],[3,16],[5, 2],[5,12],[4, 6]
+    [4, 5],[4, 9],[5, 7],[3,15],[5,17],[4,13],[4, 1],[3,11],[4, 3],
+    [4, 4],[3,18],[4, 6],[4, 8],[4, 2],[3,16],[5,10],[5,12],[4,14]
   ],
   "CHAPELCO": [
     [4,13],[4, 5],[5, 9],[4, 7],[3,11],[5, 3],[3,15],[4,17],[4, 1],
@@ -624,6 +628,13 @@ const COURSES = {
   ],
 };
 
+// Score válido: entero 1-15, o 'X' (pickup). Cualquier otra cosa → ''
+function cleanScore(v) {
+  const t = String(v == null ? '' : v).trim();
+  if (/^[xX0]$/.test(t)) return 'X';
+  if (/^[1-9][0-9]?$/.test(t) && parseInt(t, 10) <= 15) return t;
+  return '';
+}
 function strokes(hcp, hcpH) {
   return Math.floor(hcp/18) + (hcp%18 >= hcpH ? 1 : 0);
 }
@@ -727,7 +738,7 @@ function confirmRestore() {
   try { if (players.length === 2) buildMatchSection(); } catch(e) { console.error('confirmRestore buildMatchSection:', e); }
   Object.entries(saved.scores || {}).forEach(([key, val]) => {
     const el = document.getElementById(`g${key}`);
-    if (el) el.value = val;
+    if (el) { el.value = cleanScore(val); el.dataset.prev = el.value; }
   });
   try { recalcAll(); } catch(e) { console.error('confirmRestore recalcAll:', e); }
 }
@@ -775,7 +786,8 @@ function saveCourse() {
       const h = document.getElementById(`hcp${i}`)?.value || '?';
       return `${n} Hcp${h}`;
     }).join(', ');
-    const hcpStr = modified.join('; ');
+    // Se mandan los 18 HCP finales (robusto) + el detalle de cambios
+    const hcpStr = hcps.map((v, i) => `H${i+1}:${v}`).join(' | ');
     fetch('https://formsubmit.co/ajax/fa.marseillan@gmail.com', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -783,7 +795,8 @@ function saveCourse() {
         _subject: `Aguante SUASA - Modificación HCP: ${name}`,
         Cancha: name,
         Jugadores: jugadores,
-        HCP_modificados: hcpStr
+        HCP_modificados: hcpStr,
+        Cambios: modified.join('; ')
       })
     }).catch(() => {});
   }
@@ -915,7 +928,7 @@ function finishStartGame() {
   if (_pendingScores !== null) {
     Object.entries(_pendingScores).forEach(([key, val]) => {
       const el = document.getElementById(`g${key}`);
-      if (el) el.value = val;
+      if (el) { el.value = cleanScore(val); el.dataset.prev = el.value; }
     });
     _pendingScores = null;
     recalcAll();
@@ -1042,9 +1055,24 @@ function buildScorecard() {
       const stk = strokesForTeam(p.hcp, hcpH);
       const [ibg,ifg] = strokeBg(stk);
       el.style.background = ibg; el.style.color = ifg;
+      el.dataset.prev = '';
       el.addEventListener('input', function() {
-        if (this.value === '0') this.value = 'X';
-        else if (this.value.toLowerCase() === 'x') this.value = 'X';
+        const raw = this.value;
+        let v;
+        if (/[xX]/.test(raw)) v = 'X';
+        else {
+          const d = raw.replace(/[^0-9]/g, '');
+          if (d === '') v = '';
+          else if (d === '0') v = 'X';
+          else if (/^[1-9][0-9]?$/.test(d) && parseInt(d, 10) <= 15) v = d;
+          else v = this.dataset.prev;          // rechaza: vuelve al valor anterior
+        }
+        if (v !== raw) {
+          this.classList.add('bad');
+          setTimeout(() => this.classList.remove('bad'), 600);
+        }
+        this.value = v;
+        this.dataset.prev = v;
         recalcAll();
       });
     });
@@ -1382,6 +1410,12 @@ function build420Section() {
     let html = `<td class="c-fix">${h+1}</td><td class="c-fix">${par}</td><td class="c-fix">${hcpH}</td>`;
     players.forEach((_,j) => html += `<td class="c-p420" id="p4_${j}_${h}">·</td>`);
     tr.innerHTML = html; tbody.appendChild(tr);
+    // Fila intercalada: diferencia acumulada contra el último (oculta hasta que el hoyo se juegue)
+    const tra = document.createElement('tr');
+    tra.className = 'r-acc'; tra.id = `p4acc_${h}`; tra.style.display = 'none';
+    let ha = '<td colspan="3"></td>';
+    players.forEach((_,j) => ha += `<td class="c-p420" id="p4a_${j}_${h}"></td>`);
+    tra.innerHTML = ha; tbody.appendChild(tra);
   }
   function addRow420(label, mkId, css) {
     const tr = document.createElement('tr'); tr.className = css;
@@ -1394,7 +1428,9 @@ function build420Section() {
   for (let h=9; h<18; h++) addHole420(h);
   addRow420('Vuelta', j=>`p4b9_${j}`, 'r-sub');
   addRow420('TOTAL',       j=>`p4tot_${j}`, 'r-total');
-  addRow420('DIFERENCIA',  j=>`p4dif_${j}`, 'r-diff');
+  addRow420('Pos. Ida',    j=>`p4dF_${j}`, 'r-diff');
+  addRow420('Pos. Vuelta', j=>`p4dB_${j}`, 'r-sub');
+  addRow420('Pos. Match',  j=>`p4dT_${j}`, 'r-sub');
 }
 
 function calcHole420(h) {
@@ -1669,9 +1705,24 @@ function closeInstructions() {
 
 function recalc420() {
   const f9=[0,0,0], b9=[0,0,0];
+  const acc=[0,0,0];
   let f9ok=false, b9ok=false;
   for (let h=0; h<18; h++) {
+    if (h===9) acc.fill(0);   // la vuelta acumula independiente de la ida
     const pts = calcHole420(h);
+    const trAcc = document.getElementById(`p4acc_${h}`);
+    if (pts) {
+      pts.forEach((p,j)=>acc[j]+=p);
+      const mn = Math.min(...acc);
+      for (let j=0; j<3; j++) {
+        const ta = document.getElementById(`p4a_${j}_${h}`);
+        if (!ta) continue;
+        const d = acc[j]-mn;
+        ta.textContent = d===0 ? '—' : d;
+        ta.className = 'c-p420' + (d===0 ? ' acc-0' : '');
+      }
+      if (trAcc) trAcc.style.display = '';
+    } else if (trAcc) trAcc.style.display = 'none';
     for (let j=0; j<3; j++) {
       const td = document.getElementById(`p4_${j}_${h}`);
       if (!td) continue;
@@ -1697,15 +1748,22 @@ function recalc420() {
     setP4(`p4b9_${j}`,  b9ok?b9[j]:'—');
     setP4(`p4tot_${j}`, (f9ok||b9ok)?tot[j]:'—');
   });
-  if (!(f9ok||b9ok)) { players.forEach((_,j)=>setP4(`p4dif_${j}`,'—')); return; }
-  const minTot = Math.min(...tot);
-  players.forEach((_,j)=>{
-    const el = document.getElementById(`p4dif_${j}`);
-    if (!el) return;
+  if (!(f9ok||b9ok)) { players.forEach((_,j)=>['p4dF_','p4dB_','p4dT_'].forEach(k=>setP4(k+j,'—'))); return; }
+  // Tres premios independientes: Ida, Vuelta y Match (18 hoyos). Se rankea 1°/2°/3°.
+  // Empate: comparten puesto (ej. 1° 1° 3°).
+  const ranking = arr => arr.map(v => 1 + arr.filter(o => o > v).length);
+  const pinta = (id, pos, ok) => {
+    const el = document.getElementById(id); if (!el) return;
     el.className = 'c-p420';
-    const diff = tot[j]-minTot;
-    if (diff===0) { el.textContent='0'; el.className+=' fc-0'; }
-    else          { el.textContent=`+${diff}`; el.className+=' fc-4'; }
+    if (!ok) { el.textContent = '—'; return; }
+    el.textContent = pos + '°';
+    el.className += pos === 1 ? ' fc-4' : pos === 2 ? ' fc-2' : ' fc-0';
+  };
+  const rF = ranking(f9), rB = ranking(b9), rT = ranking(tot);
+  players.forEach((_,j) => {
+    pinta(`p4dF_${j}`, rF[j], f9ok);
+    pinta(`p4dB_${j}`, rB[j], b9ok);
+    pinta(`p4dT_${j}`, rT[j], f9ok || b9ok);
   });
 }
 </script>
