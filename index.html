@@ -1077,6 +1077,16 @@ function buildScorecard() {
         this.dataset.prev = v;
         recalcAll();
       });
+      // Si sale de la casilla vacía y otro jugador ya cargó ese hoyo → X (pickup)
+      el.addEventListener('blur', function() {
+        if (this.value.trim() !== '') return;
+        const otro = players.some((_, k) => {
+          if (k === j) return false;
+          const o = document.getElementById(`g${k}_${h}`);
+          return o && o.value.trim() !== '';
+        });
+        if (otro) { this.value = 'X'; this.dataset.prev = 'X'; recalcAll(); }
+      });
     });
   }
   function addSubRow(label, css, parSum, mkId) {
