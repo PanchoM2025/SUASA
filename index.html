@@ -29,7 +29,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20261009-002";
+const VERSION = "20261014-003";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -657,6 +657,24 @@ const COURSES = {
     [4, 2],[4, 6],[4,18],[5,14],[3,16],[4, 4],[3,12],[5, 8],[4,10]
   ],
 };
+// Canchas de fábrica: no se pueden pisar ni borrar desde "Cancha nueva" / "Gestionar"
+const BUILTIN_COURSES = new Set(Object.keys(COURSES));
+function isBuiltinName(n) {
+  const k = String(n).trim().toLowerCase();
+  return [...BUILTIN_COURSES].some(b => b.toLowerCase() === k);
+}
+
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
+}
+function findOption(sel, value) {
+  return Array.from(sel.options).find(o => o.value === value) || null;
+}
+// Títulos guardados por versiones anteriores: "Cancha  —  S.U.A.S.A."
+function courseKeyFromTitle(t) {
+  return String(t || '').replace(/\s+—\s+S\.U\.A\.S\.A\.\s*$/, '').trim();
+}
 
 // Score válido: entero 1-15, o 'X' (pickup). Cualquier otra cosa → ''
 function cleanScore(v) {
@@ -714,6 +732,7 @@ function saveState() {
   });
   try { localStorage.setItem(STATE_KEY, JSON.stringify({
     courseName: document.getElementById('sc-title').textContent,
+    courseKey: _tmpCourseName,
     players, course, scores, gameMode, hcpMode
   })); } catch(e) {}
 }
@@ -729,11 +748,11 @@ function restoreState() {
   _pendingSavedState = saved;
   const list = document.getElementById('restore-players-list');
   if (list) {
-    const cancha = (saved.courseName || '').replace(/\s*[-—–].*$/, '').trim();
+    const cancha = saved.courseKey || courseKeyFromTitle(saved.courseName);
     const rows = saved.players.map((p, i) =>
-      `<div class="rp-row"><span class="rp-name">J${i+1} · ${p.ini}</span><span class="rp-hcp">HCP ${p.hcp}</span></div>`
+      `<div class="rp-row"><span class="rp-name">J${i+1} · ${escHtml(p.ini)}</span><span class="rp-hcp">HCP ${escHtml(p.hcp)}</span></div>`
     ).join('');
-    list.innerHTML = `<div style="color:#a8d8a8;font-size:11px;margin-bottom:6px;">${cancha}</div>` + rows;
+    list.innerHTML = `<div style="color:#a8d8a8;font-size:11px;margin-bottom:6px;">${escHtml(cancha)}</div>` + rows;
   }
   document.getElementById('modal-restore').classList.add('open');
   return true;
@@ -748,14 +767,17 @@ function confirmRestore() {
   players  = saved.players;
   gameMode = saved.gameMode || '1y2';
   hcpMode  = saved.hcpMode  || 'completo';
-  const courseKey = (saved.courseName || '').replace(/\s*[-—–].*$/, '').trim();
-  if (courseKey && COURSES[courseKey]) {
-    const base = COURSES[courseKey];
-    const savedHcps = JSON.parse(localStorage.getItem('hcp_' + courseKey) || 'null');
-    course = base.map(([par], h) => [par, (savedHcps && savedHcps[h] != null) ? savedHcps[h] : base[h][1]]);
-  } else {
+  const courseKey = saved.courseKey || courseKeyFromTitle(saved.courseName);
+  // Se usan los hoyos con los que se jugó la partida (no los HCP guardados de la cancha)
+  if (Array.isArray(saved.course) && saved.course.length === 18) {
     course = saved.course;
+  } else if (COURSES[courseKey]) {
+    course = COURSES[courseKey].map(([par, hcpH]) => [par, hcpH]);
+  } else {
+    return;
   }
+  _tmpCourseName = courseKey;
+  fillSetupFromGame();
   document.getElementById('sc-title').textContent = saved.courseName || '';
   document.getElementById('setup').style.display = 'none';
   document.getElementById('scorecard').style.display = 'block';
@@ -771,6 +793,27 @@ function confirmRestore() {
     if (el) { el.value = cleanScore(val); el.dataset.prev = el.value; }
   });
   try { recalcAll(); } catch(e) { console.error('confirmRestore recalcAll:', e); }
+}
+
+// Completa la 1° pantalla con los jugadores, la cancha y los HCP de hoyos de la partida
+// en curso, para que "Regresar" + "Anotar" la retome igual.
+function fillSetupFromGame() {
+  for (let i = 0; i < 4; i++) {
+    const p = players[i];
+    const ini = document.getElementById(`ini${i}`);
+    const hcp = document.getElementById(`hcp${i}`);
+    if (ini) ini.value = p ? p.ini : '';
+    if (hcp) hcp.value = p ? p.hcp : '';
+  }
+  const sel = document.getElementById('csel');
+  sel.value = (_tmpCourseName && COURSES[_tmpCourseName] && findOption(sel, _tmpCourseName)) ? _tmpCourseName : '';
+  populateHcpTable();
+  if (sel.value) {
+    for (let h = 0; h < 18; h++) {
+      const el = document.getElementById(`hv${h}`);
+      if (el && course[h]) el.value = course[h][1];
+    }
+  }
 }
 
 function discardRestore() {
@@ -789,7 +832,7 @@ function resetCourse() {
   const toast = document.getElementById('save-toast');
   toast.textContent = 'Restablecido';
   toast.style.display = 'block';
-  setTimeout(() => { toast.style.display = 'none'; toast.textContent = '&#x2705; Guardado'; }, 2000);
+  setTimeout(() => { toast.style.display = 'none'; toast.textContent = '✅ Guardado'; }, 2000);
 }
 
 function saveCourse() {
@@ -975,9 +1018,22 @@ function finishStartGame() {
   document.getElementById('scorecard').style.display = 'block';
   // Restaurar scores si venimos de "Regresar"
   if (_pendingScores !== null) {
-    Object.entries(_pendingScores).forEach(([key, val]) => {
-      const el = document.getElementById(`g${key}`);
-      if (el) { el.value = cleanScore(val); el.dataset.prev = el.value; }
+    // Cada jugador recupera sus scores por iniciales; si cambió las iniciales, por posición
+    const used = new Set();
+    const pick = (j) => {
+      let k = _pendingScores.findIndex((e, i) => !used.has(i) && e.ini === players[j].ini);
+      if (k < 0 && _pendingScores[j] && !used.has(j)
+          && !players.some(p => p.ini === _pendingScores[j].ini)) k = j;
+      if (k >= 0) used.add(k);
+      return k;
+    };
+    players.forEach((_, j) => {
+      const k = pick(j);
+      if (k < 0) return;
+      Object.entries(_pendingScores[k].scores).forEach(([h, val]) => {
+        const el = document.getElementById(`g${j}_${h}`);
+        if (el) { el.value = cleanScore(val); el.dataset.prev = el.value; }
+      });
     });
     _pendingScores = null;
     recalcAll();
@@ -1047,12 +1103,13 @@ function shareCard() {
 
 function goBack() {
   // Captura scores actuales del DOM para restaurarlos después de "Anotar"
-  _pendingScores = {};
-  players.forEach((p, j) => {
+  _pendingScores = players.map((p, j) => {
+    const scores = {};
     for (let h = 0; h < 18; h++) {
       const el = document.getElementById(`g${j}_${h}`);
-      if (el && el.value.trim() !== '') _pendingScores[`${j}_${h}`] = el.value.trim();
+      if (el && el.value.trim() !== '') scores[h] = el.value.trim();
     }
+    return { ini: p.ini, scores };
   });
   _savedGameMode = gameMode;
   _savedHcpMode  = hcpMode;
@@ -1086,7 +1143,7 @@ function buildScorecard() {
   const thead = document.createElement('thead');
   let th = '<tr><th class="c-fix">H</th><th class="c-fix">Par</th><th class="c-fix">HCP</th>';
   players.forEach(p => {
-    th += `<th class="c-player">${p.ini}<br><span style="color:#ffd700;font-size:10px">HCP ${p.hcp}</span></th>`;
+    th += `<th class="c-player">${escHtml(p.ini)}<br><span style="color:#ffd700;font-size:10px">HCP ${p.hcp}</span></th>`;
   });
   th += '</tr>';
   thead.innerHTML = th; tbl.appendChild(thead);
@@ -1251,9 +1308,9 @@ function buildTeamSection() {
     `<tr>
       <th class="c-fix">H</th><th class="c-fix">Par</th><th class="c-fix">HCP</th>
       <th class="c-team" style="color:#ffd700">Equipo A<br>
-        <span style="color:#a8d8a8;font-size:10px">${players[0].ini}(${effHcps[0]}) / ${players[1].ini}(${effHcps[1]})</span></th>
+        <span style="color:#a8d8a8;font-size:10px">${escHtml(players[0].ini)}(${effHcps[0]}) / ${escHtml(players[1].ini)}(${effHcps[1]})</span></th>
       <th class="c-team" style="color:#87ceeb">Equipo B<br>
-        <span style="color:#a8d8a8;font-size:10px">${players[2].ini}(${effHcps[2]}) / ${players[3].ini}(${effHcps[3]})</span></th>
+        <span style="color:#a8d8a8;font-size:10px">${escHtml(players[2].ini)}(${effHcps[2]}) / ${escHtml(players[3].ini)}(${effHcps[3]})</span></th>
     </tr>`;
   tbl.appendChild(thead);
   const tbody = document.createElement('tbody'); tbl.appendChild(tbody);
@@ -1265,6 +1322,14 @@ function buildTeamSection() {
       `<td class="c-fix">${h+1}</td><td class="c-fix">${par}</td><td class="c-fix">${hcpH}</td>` +
       `<td class="c-team" id="ta_${h}">·</td><td class="c-team" id="tb_${h}">·</td>`;
     tbody.appendChild(tr);
+    // Fila intercalada: diferencia acumulada del equipo que va ganando (oculta hasta que el hoyo se juegue)
+    // En el 9 y el 18 no va: el resultado se ve en la fila Ida / Vuelta
+    if (h === 8 || h === 17) return;
+    const tra = document.createElement('tr');
+    tra.className = 'r-acc'; tra.id = `tacc_${h}`; tra.style.display = 'none';
+    tra.innerHTML = '<td colspan="3"></td>' +
+      `<td class="c-team" id="taa_${h}"></td><td class="c-team" id="tba_${h}"></td>`;
+    tbody.appendChild(tra);
   }
   function addTeamRow(label, idA, idB, css) {
     const tr = document.createElement('tr'); tr.className = css;
@@ -1277,7 +1342,10 @@ function buildTeamSection() {
   for (let h=9; h<18; h++) addHoleRow(h);
   addTeamRow('Vuelta', 'ta_b9','tb_b9','r-sub');
   addTeamRow('TOTAL',  'ta_tot','tb_tot','r-total');
-  addTeamRow('DIFERENCIA','ta_dif','tb_dif','r-diff');
+  // Tres resultados, igual que el 4-2-0: Ida, Vuelta y Match (ida + vuelta)
+  addTeamRow('Dif. Ida',    'ta_dF', 'tb_dF', 'r-diff');
+  addTeamRow('Dif. Vuelta', 'ta_dB', 'tb_dB', 'r-sub');
+  addTeamRow('Dif. Match',  'ta_dif','tb_dif','r-sub');
 }
 
 function calcHoleTeam(h) {
@@ -1315,8 +1383,23 @@ function applyTeam(td, p) {
 
 function recalcTeam() {
   let f9A=0,f9B=0,b9A=0,b9B=0,f9ok=false,b9ok=false;
+  const acc=[0,0];
   for (let h=0; h<18; h++) {
+    if (h===9) acc.fill(0);   // la vuelta acumula independiente de la ida (igual que el 4-2-0)
     const pts = calcHoleTeam(h);
+    const trAcc = document.getElementById(`tacc_${h}`);
+    if (pts) {
+      acc[0]+=pts[0]; acc[1]+=pts[1];
+      const mn = Math.min(acc[0], acc[1]);
+      ['taa_','tba_'].forEach((k,t) => {
+        const ta = document.getElementById(k+h);
+        if (!ta) return;
+        const d = acc[t]-mn;
+        ta.textContent = d===0 ? '—' : d;
+        ta.className = 'c-team' + (d===0 ? ' acc-0' : '');
+      });
+      if (trAcc) trAcc.style.display = '';
+    } else if (trAcc) trAcc.style.display = 'none';
     const tdA=document.getElementById(`ta_${h}`), tdB=document.getElementById(`tb_${h}`);
     if (!tdA||!tdB) continue;
     tdA.className='c-team'; tdB.className='c-team';
@@ -1330,16 +1413,21 @@ function recalcTeam() {
   setTd('ta_b9',b9ok?b9A:'—'); setTd('tb_b9',b9ok?b9B:'—');
   const any=f9ok||b9ok, totA=f9A+b9A, totB=f9B+b9B;
   setTd('ta_tot',any?totA:'—'); setTd('tb_tot',any?totB:'—');
-  const dA=document.getElementById('ta_dif'), dB=document.getElementById('tb_dif');
-  if (!dA||!dB) return;
-  dA.className='c-team'; dB.className='c-team';
-  if (!any) { dA.textContent='—'; dB.textContent='—'; }
-  else if (totA===totB) { dA.textContent='EMPATE'; dB.textContent='EMPATE'; }
-  else if (totA>totB) {
-    dA.textContent=`+${totA-totB}`; dA.className+=' tc-2'; dB.textContent='—';
-  } else {
-    dA.textContent='—'; dB.textContent=`+${totB-totA}`; dB.className+=' tc-2';
-  }
+  const pintaDif = (idA, idB, a, b, ok) => {
+    const dA=document.getElementById(idA), dB=document.getElementById(idB);
+    if (!dA||!dB) return;
+    dA.className='c-team'; dB.className='c-team';
+    if (!ok) { dA.textContent='—'; dB.textContent='—'; }
+    else if (a===b) { dA.textContent='EMPATE'; dB.textContent='EMPATE'; }
+    else if (a>b) {
+      dA.textContent=`+${a-b}`; dA.className+=' tc-2'; dB.textContent='—';
+    } else {
+      dA.textContent='—'; dB.textContent=`+${b-a}`; dB.className+=' tc-2';
+    }
+  };
+  pintaDif('ta_dF', 'tb_dF',  f9A,  f9B,  f9ok);
+  pintaDif('ta_dB', 'tb_dB',  b9A,  b9B,  b9ok);
+  pintaDif('ta_dif','tb_dif', totA, totB, any);
 }
 
 // ════ MATCH (2 jugadores) ════
@@ -1358,7 +1446,7 @@ function buildMatchSection() {
   const colors = ['#ffd700','#87ceeb'];
   let th = '<tr><th class="c-fix">H</th><th class="c-fix">Par</th><th class="c-fix">HCP</th>';
   players.forEach((p,i) =>
-    th += `<th class="c-match" style="color:${colors[i]}">${p.ini}<br><span style="color:#a8d8a8;font-size:10px">HCP ${effHcps[i]}</span></th>`
+    th += `<th class="c-match" style="color:${colors[i]}">${escHtml(p.ini)}<br><span style="color:#a8d8a8;font-size:10px">HCP ${effHcps[i]}</span></th>`
   );
   th += '</tr>';
   thead.innerHTML = th; tbl.appendChild(thead);
@@ -1459,7 +1547,7 @@ function build420Section() {
   let th = '<tr><th class="c-fix">H</th><th class="c-fix">Par</th><th class="c-fix">HCP</th>';
   players.forEach((p,i) => {
     const color = i===0?'#ffd700':i===1?'#90ee90':'#87ceeb';
-    th += `<th class="c-p420" style="color:${color}">${p.ini}<br><span style="color:#a8d8a8;font-size:10px">HCP ${effHcps[i]}</span></th>`;
+    th += `<th class="c-p420" style="color:${color}">${escHtml(p.ini)}<br><span style="color:#a8d8a8;font-size:10px">HCP ${effHcps[i]}</span></th>`;
   });
   th += '</tr>';
   thead.innerHTML = th; tbl.appendChild(thead);
@@ -1521,12 +1609,14 @@ function calcHole420(h) {
     if (active[0].net===active[1].net) { pts[active[0].j]=3; pts[active[1].j]=3; }
     else                               { pts[active[0].j]=4; pts[active[1].j]=2; }
   } else if (active.length===1) {
-    pts[active[0].j]=4;
+    // Los otros dos levantaron: empatan el 2° puesto → 4-1-1
+    data.forEach(d => { pts[d.j] = d.pickup ? 1 : 4; });
   }
   return pts;
 }
 
 // ════ STICKY HEADER SCORECARD ════
+let _stickyScrollHandler = null;
 function setupStickyHeader() {
   // Remove any previous sticky header
   const old = document.getElementById('sticky-sc-header');
@@ -1595,10 +1685,13 @@ function setupStickyHeader() {
     }
   }
 
-  window.addEventListener('scroll', () => {
+  // Un solo listener de scroll: se quita el de la partida anterior
+  if (_stickyScrollHandler) window.removeEventListener('scroll', _stickyScrollHandler);
+  _stickyScrollHandler = () => {
     if (raf) cancelAnimationFrame(raf);
     raf = requestAnimationFrame(update);
-  }, { passive: true });
+  };
+  window.addEventListener('scroll', _stickyScrollHandler, { passive: true });
 
   wrap.addEventListener('scroll', () => {
     inner.scrollLeft = wrap.scrollLeft;
@@ -1664,7 +1757,7 @@ function renderGcLista() {
   }
   lista.innerHTML = saved.map((c, i) =>
     `<div class="gc-item">
-      <span class="gc-item-name">${c.name}</span>
+      <span class="gc-item-name">${escHtml(c.name)}</span>
       <button class="gc-btn-del" onclick="gcBorrar(${i})">✕ Borrar</button>
     </div>`
   ).join('');
@@ -1675,10 +1768,13 @@ function gcBorrar(i) {
   const nombre = saved[i].name;
   saved.splice(i, 1);
   localStorage.setItem('custom_courses_suasa', JSON.stringify(saved));
-  delete COURSES[nombre];
-  const sel = document.getElementById('csel');
-  const opt = sel.querySelector(`option[value="${nombre}"]`);
-  if (opt) sel.removeChild(opt);
+  // Una cancha de fábrica con el mismo nombre se conserva
+  if (!BUILTIN_COURSES.has(nombre)) {
+    delete COURSES[nombre];
+    const sel = document.getElementById('csel');
+    const opt = findOption(sel, nombre);
+    if (opt) sel.removeChild(opt);
+  }
   document.getElementById('gc-msg').textContent = `✅ "${nombre}" borrada.`;
   renderGcLista();
 }
@@ -1693,6 +1789,9 @@ function guardarNuevaCancha() {
   const nombre = document.getElementById('nc-nombre').value.trim();
   const ubicacion = document.getElementById('nc-ubicacion').value.trim();
   if (!nombre) { ncToast('⚠ Ingresá el nombre de la cancha.', false); return; }
+  if (nombre.startsWith('__') || isBuiltinName(nombre)) {
+    ncToast(`⚠ "${nombre}" ya está en la lista. Elegila desde el selector o usá otro nombre.`, false); return;
+  }
 
   const pars = [], hcps = [];
   for (let h = 1; h <= 18; h++) {
@@ -1732,10 +1831,10 @@ function guardarNuevaCancha() {
 
   // Agregar al select (si no existe)
   const sel = document.getElementById('csel');
-  if (!sel.querySelector(`option[value="${nombre}"]`)) {
+  if (!findOption(sel, nombre)) {
     const opt = document.createElement('option');
     opt.value = opt.textContent = nombre;
-    sel.insertBefore(opt, sel.querySelector('option[value="__nueva__"]'));
+    sel.insertBefore(opt, findOption(sel, '__nueva__'));
   }
   sel.value = nombre;
 
