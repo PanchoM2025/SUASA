@@ -29,7 +29,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20261016-003";
+const VERSION = "20261016-004";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -1608,7 +1608,7 @@ function build420Section() {
   for (let h=9; h<18; h++) addHole420(h);
   addRow420('Vuelta', j=>`p4b9_${j}`, 'r-neto');
   addRow420('Neto Vuelta', j=>`p4nb9_${j}`, 'r-nsum');
-  addRow420('TOTAL NETO',  j=>`p4tot_${j}`, 'r-total');
+  addRow420('TOTAL PTS',   j=>`p4tot_${j}`, 'r-total');
   addRow420('Neto Total',  j=>`p4ntot_${j}`, 'r-nsum');
   addRow420('Pos. Ida',    j=>`p4dF_${j}`, 'r-diff');
   addRow420('Pos. Vuelta', j=>`p4dB_${j}`, 'r-sub');
@@ -1953,7 +1953,7 @@ function recalc420() {
   const tot = f9.map((v,j)=>v+b9[j]);
   const setP4=(id,val)=>{ const el=document.getElementById(id); if(el){el.textContent=val;el.className='c-p420';} };
   players.forEach((_,j)=>{
-    // Ida / Vuelta: neto (diferencia contra el último). TOTAL NETO: neto de ida + vuelta.
+    // Ida / Vuelta: neto (diferencia contra el último). TOTAL PTS: neto de ida + vuelta.
     const neto = arr => { const m = Math.min(...arr); return arr.map(v => v - m); };
     const nF = neto(f9), nB = neto(b9);
     const nT = neto(nF.map((v,k) => (f9ok ? v : 0) + (b9ok ? nB[k] : 0)));
