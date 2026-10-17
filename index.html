@@ -29,7 +29,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20261014-003";
+const VERSION = "20261016-002";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -322,6 +322,7 @@ tr.r-acc td { background:#0a2414; color:#ffd700; font-size:17px; font-weight:bol
 tr.r-acc td.acc-0 { color:#5f8f6a; font-weight:normal; }
 tr.r-neto td { background:#0a2a14; color:#ffd700; font-weight:bold; border-top:2px solid #ffd700; border-bottom:2px solid #ffd700; }
 tr.r-neto td.acc-0 { color:#5f8f6a; }
+tr.r-nsum td { background:#0a2414; color:#a8d8a8; font-size:13px; font-weight:bold; padding:3px 2px; }
 input.g.bad { outline:2px solid #ff3b30 !important; }
 
 /* ── COLORES MATCH ── */
@@ -707,6 +708,23 @@ function effectiveTeamHcp(hcp) {
 function strokesForTeam(hcp, hcpH) {
   const h = effectiveTeamHcp(hcp);
   return Math.floor(h/18) + (h%18 >= hcpH ? 1 : 0);
+}
+// Neto acumulado del jugador j entre los hoyos from..to-1 (HCP de juego de fourball / 4-2-0).
+// Se va sumando a medida que se cargan scores. * = levantó algún hoyo (ese hoyo no suma).
+function netoAcum(j, from, to) {
+  let s=0, cnt=0, pickup=false;
+  for (let h=from; h<to; h++) {
+    const el = document.getElementById(`g${j}_${h}`);
+    const raw = el ? el.value.trim() : '';
+    if (raw === '') continue;
+    if (raw === 'X') { pickup=true; cnt++; continue; }
+    const g = parseInt(raw);
+    if (isNaN(g) || g <= 0) continue;
+    s += g - strokesForTeam(players[j].hcp, course[h][1]); cnt++;
+  }
+  if (!cnt) return '—';
+  if (pickup) return s > 0 ? s + '*' : 'X';
+  return s;
 }
 
 let players  = [];
@@ -1339,8 +1357,10 @@ function buildTeamSection() {
   }
   for (let h=0; h<9; h++) addHoleRow(h);
   addTeamRow('Ida',    'ta_f9','tb_f9','r-sub');
+  addTeamRow('Neto Ida',    'ta_nf9','tb_nf9','r-nsum');
   for (let h=9; h<18; h++) addHoleRow(h);
   addTeamRow('Vuelta', 'ta_b9','tb_b9','r-sub');
+  addTeamRow('Neto Vuelta', 'ta_nb9','tb_nb9','r-nsum');
   addTeamRow('TOTAL',  'ta_tot','tb_tot','r-total');
   // Tres resultados, igual que el 4-2-0: Ida, Vuelta y Match (ida + vuelta)
   addTeamRow('Dif. Ida',    'ta_dF', 'tb_dF', 'r-diff');
@@ -1428,6 +1448,13 @@ function recalcTeam() {
   pintaDif('ta_dF', 'tb_dF',  f9A,  f9B,  f9ok);
   pintaDif('ta_dB', 'tb_dB',  b9A,  b9B,  b9ok);
   pintaDif('ta_dif','tb_dif', totA, totB, any);
+  // Neto acumulado de cada jugador (Ida / Vuelta).
+  // Formato por equipo: "neto 1° jugador · neto 2° jugador".
+  [['nf9',0,9],['nb9',9,18]].forEach(([k,from,to]) => {
+    const sums = [0,1,2,3].map(j => netoAcum(j, from, to));
+    setTd(`ta_${k}`, `${sums[0]} · ${sums[1]}`);
+    setTd(`tb_${k}`, `${sums[2]} · ${sums[3]}`);
+  });
 }
 
 // ════ MATCH (2 jugadores) ════
@@ -1576,8 +1603,10 @@ function build420Section() {
   }
   for (let h=0; h<9; h++) addHole420(h);
   addRow420('Ida',    j=>`p4f9_${j}`, 'r-neto');
+  addRow420('Neto Ida',    j=>`p4nf9_${j}`, 'r-nsum');
   for (let h=9; h<18; h++) addHole420(h);
   addRow420('Vuelta', j=>`p4b9_${j}`, 'r-neto');
+  addRow420('Neto Vuelta', j=>`p4nb9_${j}`, 'r-nsum');
   addRow420('TOTAL NETO',  j=>`p4tot_${j}`, 'r-total');
   addRow420('Pos. Ida',    j=>`p4dF_${j}`, 'r-diff');
   addRow420('Pos. Vuelta', j=>`p4dB_${j}`, 'r-sub');
@@ -1934,6 +1963,8 @@ function recalc420() {
     fmt(`p4f9_${j}`,  nF[j], f9ok);
     fmt(`p4b9_${j}`,  nB[j], b9ok);
     fmt(`p4tot_${j}`, nT[j], f9ok || b9ok);
+    setP4(`p4nf9_${j}`, netoAcum(j, 0, 9));
+    setP4(`p4nb9_${j}`, netoAcum(j, 9, 18));
   });
   if (!(f9ok||b9ok)) { players.forEach((_,j)=>['p4dF_','p4dB_','p4dT_'].forEach(k=>setP4(k+j,'—'))); return; }
   // Tres premios independientes: Ida, Vuelta y Match (18 hoyos). Se rankea 1°/2°/3°.
