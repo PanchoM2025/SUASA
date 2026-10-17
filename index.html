@@ -29,7 +29,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20261016-002";
+const VERSION = "20261016-003";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -1362,6 +1362,7 @@ function buildTeamSection() {
   addTeamRow('Vuelta', 'ta_b9','tb_b9','r-sub');
   addTeamRow('Neto Vuelta', 'ta_nb9','tb_nb9','r-nsum');
   addTeamRow('TOTAL',  'ta_tot','tb_tot','r-total');
+  addTeamRow('Neto Total',  'ta_ntot','tb_ntot','r-nsum');
   // Tres resultados, igual que el 4-2-0: Ida, Vuelta y Match (ida + vuelta)
   addTeamRow('Dif. Ida',    'ta_dF', 'tb_dF', 'r-diff');
   addTeamRow('Dif. Vuelta', 'ta_dB', 'tb_dB', 'r-sub');
@@ -1448,9 +1449,9 @@ function recalcTeam() {
   pintaDif('ta_dF', 'tb_dF',  f9A,  f9B,  f9ok);
   pintaDif('ta_dB', 'tb_dB',  b9A,  b9B,  b9ok);
   pintaDif('ta_dif','tb_dif', totA, totB, any);
-  // Neto acumulado de cada jugador (Ida / Vuelta).
+  // Neto acumulado de cada jugador (Ida / Vuelta / Total).
   // Formato por equipo: "neto 1° jugador · neto 2° jugador".
-  [['nf9',0,9],['nb9',9,18]].forEach(([k,from,to]) => {
+  [['nf9',0,9],['nb9',9,18],['ntot',0,18]].forEach(([k,from,to]) => {
     const sums = [0,1,2,3].map(j => netoAcum(j, from, to));
     setTd(`ta_${k}`, `${sums[0]} · ${sums[1]}`);
     setTd(`tb_${k}`, `${sums[2]} · ${sums[3]}`);
@@ -1608,6 +1609,7 @@ function build420Section() {
   addRow420('Vuelta', j=>`p4b9_${j}`, 'r-neto');
   addRow420('Neto Vuelta', j=>`p4nb9_${j}`, 'r-nsum');
   addRow420('TOTAL NETO',  j=>`p4tot_${j}`, 'r-total');
+  addRow420('Neto Total',  j=>`p4ntot_${j}`, 'r-nsum');
   addRow420('Pos. Ida',    j=>`p4dF_${j}`, 'r-diff');
   addRow420('Pos. Vuelta', j=>`p4dB_${j}`, 'r-sub');
   addRow420('Pos. Match',  j=>`p4dT_${j}`, 'r-sub');
@@ -1965,6 +1967,7 @@ function recalc420() {
     fmt(`p4tot_${j}`, nT[j], f9ok || b9ok);
     setP4(`p4nf9_${j}`, netoAcum(j, 0, 9));
     setP4(`p4nb9_${j}`, netoAcum(j, 9, 18));
+    setP4(`p4ntot_${j}`, netoAcum(j, 0, 18));
   });
   if (!(f9ok||b9ok)) { players.forEach((_,j)=>['p4dF_','p4dB_','p4dT_'].forEach(k=>setP4(k+j,'—'))); return; }
   // Tres premios independientes: Ida, Vuelta y Match (18 hoyos). Se rankea 1°/2°/3°.
