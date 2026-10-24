@@ -29,7 +29,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20261024-004";
+const VERSION = "20261024-005";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -751,6 +751,8 @@ const STATE_KEY = 'suasa_state_v1';
 let _pendingScores  = null;  // scores capturados al presionar Regresar
 let _savedGameMode  = null;
 let _savedHcpMode   = null;
+let _savedCourseKey = null;  // cancha de la partida al presionar Regresar
+let _savedNPlayers  = 0;     // cantidad de jugadores al presionar Regresar
 
 function saveState() {
   if (document.getElementById('scorecard').style.display === 'none') return;
@@ -1005,7 +1007,18 @@ function startGame() {
   });
   _tmpCourseName = name;
   if (_pendingScores !== null) {
-    // Viene de "Regresar": reusar modalidad ya elegida, sin mostrar modal
+    // Si cambió la cancha o son todos jugadores nuevos, preguntar si se conservan los scores
+    const hayScores = _pendingScores.some(e => Object.keys(e.scores).length > 0);
+    const cambioCancha = name !== _savedCourseKey;
+    const algunoIgual = players.some(p => _pendingScores.some(e => e.ini === p.ini));
+    if (hayScores && (cambioCancha || !algunoIgual)) {
+      if (!confirm('Cambiaste la cancha o los jugadores.\n¿Querés conservar los scores que ya estaban cargados?\n\nAceptar = conservar · Cancelar = tarjeta vacía')) {
+        _pendingScores = null;
+      }
+    }
+  }
+  if (_pendingScores !== null && players.length === _savedNPlayers) {
+    // Viene de "Regresar" con la misma cantidad de jugadores: reusar modalidad, sin mostrar modal
     gameMode = _savedGameMode || '1y2';
     hcpMode  = _savedHcpMode  || 'completo';
     finishStartGame();
@@ -1153,6 +1166,8 @@ function goBack() {
   });
   _savedGameMode = gameMode;
   _savedHcpMode  = hcpMode;
+  _savedCourseKey = _tmpCourseName;
+  _savedNPlayers  = players.length;
   document.getElementById('scorecard').style.display = 'none';
   document.getElementById('setup').style.display = 'block';
   window.scrollTo(0, 0);
