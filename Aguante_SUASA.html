@@ -29,7 +29,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20261024-003";
+const VERSION = "20261024-004";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -501,6 +501,8 @@ td.mc-lose { color:#555 !important; }
     <div class="m-mod-desc">&#x201C;4-2-0&#x201D; &mdash; 4 ptos mejor pelota<br>del hoyo &middot; 2 ptos la segunda.<br>Opci&#xF3;n de HCP completo o bajar a cero.</div>
     <div class="m-mod">&#x1F94A; Con 2 jugadores:</div>
     <div class="m-mod-desc">Match &mdash; 1 pto por cada hoyo ganado.<br>Opci&#xF3;n de jugar con HCP completo o bajar a cero.</div>
+    <div class="m-mod">&#x26F3; Con 1 jugador:</div>
+    <div class="m-mod-desc">Adem&#xE1;s de la anotaci&#xF3;n, muestra el Stableford<br>hoyo a hoyo (golpes, recibe, neto y puntos)<br>con Ida, Vuelta y Total.</div>
     <button class="modal-close" onclick="closeInstructions()">Cerrar</button>
   </div>
 </div>
