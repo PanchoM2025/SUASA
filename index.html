@@ -29,7 +29,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20261016-004";
+const VERSION = "20261024-003";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -284,6 +284,7 @@ table.sc th.c-player, table.sc td.c-player { width:50px; }
 table.sc th.c-team,   table.sc td.c-team   { width:72px; }
 table.sc th.c-p420,   table.sc td.c-p420   { width:62px; }
 table.sc th.c-match,  table.sc td.c-match  { width:80px; }
+table.sc th.c-s1,     table.sc td.c-s1     { width:52px; font-size:16px; }
 table.sc td.lbl { text-align:left; padding-left:10px; font-weight:bold; }
 
 tr.r-even  td { background:#245c38; }
@@ -520,6 +521,16 @@ td.mc-lose { color:#555 !important; }
     </div>
     <p class="sec-legend" id="team-legend">1&#xBA; neto unico = 2 pts &nbsp;&middot;&nbsp; 2&#xBA; neto unico = 1 pt &nbsp;&middot;&nbsp; Empate = 0 pts &nbsp;|&nbsp; HCP 85%</p>
     <p class="sec-legend" style="margin-top:4px">&middot; Los puntos se calculan hoyo por hoyo cuando los 4 jugadores tienen score &middot;</p>
+  </div>
+
+  <!-- STABLEFORD DETALLADO (1 jugador) -->
+  <div id="section-stbl1" style="display:none" class="sec-sep">
+    <p class="sec-title" style="color:#90ee90">&#x1F3CC; STABLEFORD</p>
+    <p class="sec-sub" id="sub-stbl1"></p>
+    <div class="sc-wrap">
+      <table class="sc" id="tbl-stbl1"></table>
+    </div>
+    <p class="sec-legend">Neto = Golpes &minus; Recibe &nbsp;&middot;&nbsp; Pts = Par + Recibe + 2 &minus; Golpes (m&iacute;nimo 0) &nbsp;|&nbsp; HCP 100%</p>
   </div>
 
   <!-- MATCH (2 jugadores) -->
@@ -785,6 +796,7 @@ function confirmRestore() {
   players  = saved.players;
   gameMode = saved.gameMode || '1y2';
   hcpMode  = saved.hcpMode  || 'completo';
+  if (players.length === 1) hcpMode = 'completo';
   const courseKey = saved.courseKey || courseKeyFromTitle(saved.courseName);
   // Se usan los hoyos con los que se jugó la partida (no los HCP guardados de la cancha)
   if (Array.isArray(saved.course) && saved.course.length === 18) {
@@ -803,6 +815,8 @@ function confirmRestore() {
   document.getElementById('team-section').style.display   = 'none';
   document.getElementById('section420').style.display     = 'none';
   document.getElementById('section-match').style.display  = 'none';
+  document.getElementById('section-stbl1').style.display  = 'none';
+  try { if (players.length === 1) buildStbl1Section(); } catch(e) { console.error('confirmRestore buildStbl1Section:', e); }
   try { if (players.length === 4) buildTeamSection(); } catch(e) { console.error('confirmRestore buildTeamSection:', e); }
   try { if (players.length === 3) build420Section();   } catch(e) { console.error('confirmRestore build420Section:', e); }
   try { if (players.length === 2) buildMatchSection(); } catch(e) { console.error('confirmRestore buildMatchSection:', e); }
@@ -996,7 +1010,10 @@ function startGame() {
   } else {
     gameMode = '1y2';
     hcpMode  = 'completo';
-    if (players.length === 4) {
+    if (players.length === 1) {
+      // 1 jugador: sin pregunta de HCP, casillas pintadas al 85%
+      finishStartGame();
+    } else if (players.length === 4) {
       showModeModal(1);
     } else {
       // 3 o 2 jugadores: saltar directo al paso HCP
@@ -1024,11 +1041,14 @@ function selectHcpMode(mode) {
 }
 
 function finishStartGame() {
+  if (players.length === 1) hcpMode = 'completo';   // 1 jugador: siempre 85%, nunca "bajar a cero"
   document.getElementById('sc-title').textContent = _tmpCourseName + '  —  S.U.A.S.A.';
   buildScorecard();
   document.getElementById('team-section').style.display   = 'none';
   document.getElementById('section420').style.display     = 'none';
   document.getElementById('section-match').style.display  = 'none';
+  document.getElementById('section-stbl1').style.display  = 'none';
+  if (players.length === 1) buildStbl1Section();
   if (players.length === 4) buildTeamSection();
   if (players.length === 3) build420Section();
   if (players.length === 2) buildMatchSection();
@@ -1294,6 +1314,7 @@ function recalcAll() {
     if (players.length===4) recalcTeam();
     if (players.length===3) recalc420();
     if (players.length===2) recalcMatch();
+    if (players.length===1) recalcStbl1();
   } catch(e) { console.error('recalcAll section:', e); }
   try { saveState(); } catch(e) {}
 }
@@ -1455,6 +1476,87 @@ function recalcTeam() {
     const sums = [0,1,2,3].map(j => netoAcum(j, from, to));
     setTd(`ta_${k}`, `${sums[0]} · ${sums[1]}`);
     setTd(`tb_${k}`, `${sums[2]} · ${sums[3]}`);
+  });
+}
+
+// ════ STABLEFORD DETALLADO (1 jugador) ════
+// Hoyo · Par · HCP · Golpes · Recibe · Neto · Pts, con Ida / Vuelta / Total.
+// HCP al 100% (regla de Stableford). Se va completando a medida que se cargan scores.
+
+function buildStbl1Section() {
+  document.getElementById('section-stbl1').style.display = 'block';
+  const p = players[0];
+  document.getElementById('sub-stbl1').textContent = `${p.ini} · HCP ${p.hcp}`;
+  const tbl = document.getElementById('tbl-stbl1');
+  tbl.innerHTML = '';
+  const thead = document.createElement('thead');
+  thead.innerHTML = '<tr><th class="c-fix">H</th><th class="c-fix">Par</th><th class="c-fix">HCP</th>' +
+    '<th class="c-s1">Golpes</th><th class="c-s1">Recibe</th><th class="c-s1">Neto</th><th class="c-s1">Pts</th></tr>';
+  tbl.appendChild(thead);
+  const tbody = document.createElement('tbody'); tbl.appendChild(tbody);
+  function addHoleS1(h) {
+    const [par,hcpH] = course[h];
+    const tr = document.createElement('tr');
+    tr.className = h%2===0 ? 'r-even':'r-odd';
+    tr.innerHTML = `<td class="c-fix">${h+1}</td><td class="c-fix">${par}</td><td class="c-fix">${hcpH}</td>` +
+      `<td class="c-s1" id="s1g_${h}">·</td><td class="c-s1">${strokes(p.hcp,hcpH)}</td>` +
+      `<td class="c-s1" id="s1n_${h}">·</td><td class="c-s1" id="s1p_${h}">·</td>`;
+    tbody.appendChild(tr);
+  }
+  function addRowS1(label, key, css, from, to) {
+    const parSum = course.slice(from,to).reduce((s,[x])=>s+x,0);
+    const recSum = course.slice(from,to).reduce((s,[,hh])=>s+strokes(p.hcp,hh),0);
+    const tr = document.createElement('tr'); tr.className = css;
+    tr.innerHTML = `<td class="lbl c-fix" style="max-width:none;width:auto" colspan="2">${label}</td><td class="c-fix">${parSum}</td>` +
+      `<td class="c-s1" id="s1g_${key}">—</td><td class="c-s1">${recSum}</td>` +
+      `<td class="c-s1" id="s1n_${key}">—</td><td class="c-s1" id="s1p_${key}">—</td>`;
+    tbody.appendChild(tr);
+  }
+  for (let h=0; h<9; h++) addHoleS1(h);
+  addRowS1('Ida',    'f9',  'r-sub',   0, 9);
+  for (let h=9; h<18; h++) addHoleS1(h);
+  addRowS1('Vuelta', 'b9',  'r-sub',   9, 18);
+  addRowS1('TOTAL',  'tot', 'r-total', 0, 18);
+}
+
+function recalcStbl1() {
+  const p = players[0];
+  // Acumuladores por tramo: golpes, neto, pts, hoyos cargados, levantó alguno
+  const acc = { f9:{g:0,n:0,pts:0,cnt:0,pick:false}, b9:{g:0,n:0,pts:0,cnt:0,pick:false} };
+  for (let h=0; h<18; h++) {
+    const el = document.getElementById(`g0_${h}`);
+    const raw = el ? el.value.trim() : '';
+    const tdG = document.getElementById(`s1g_${h}`);
+    const tdN = document.getElementById(`s1n_${h}`);
+    const tdP = document.getElementById(`s1p_${h}`);
+    if (!tdG) continue;
+    const g = parseInt(raw);
+    const isPickup = (raw === 'X');
+    if (!isPickup && (raw===''||isNaN(g)||g<=0)) {
+      tdG.textContent = tdN.textContent = tdP.textContent = '·';
+      continue;
+    }
+    const [par,hcpH] = course[h];
+    const stk = strokes(p.hcp,hcpH);
+    const a = h<9 ? acc.f9 : acc.b9;
+    a.cnt++;
+    if (isPickup) {
+      a.pick = true;
+      tdG.textContent = 'X'; tdN.textContent = 'X'; tdP.textContent = '0';
+    } else {
+      const pts = puntos(g, par, p.hcp, hcpH);
+      a.g += g; a.n += g - stk; a.pts += pts;
+      tdG.textContent = g; tdN.textContent = g - stk; tdP.textContent = pts;
+    }
+  }
+  // Con hoyos levantados, golpes y neto muestran el parcial con '*' (igual que la tarjeta)
+  const fmt = (v, cnt, pick) => !cnt ? '—' : pick ? (v > 0 ? v + '*' : 'X') : v;
+  const tot = { g:acc.f9.g+acc.b9.g, n:acc.f9.n+acc.b9.n, pts:acc.f9.pts+acc.b9.pts,
+                cnt:acc.f9.cnt+acc.b9.cnt, pick:acc.f9.pick||acc.b9.pick };
+  [['f9',acc.f9],['b9',acc.b9],['tot',tot]].forEach(([k,a]) => {
+    set(`s1g_${k}`, fmt(a.g, a.cnt, a.pick));
+    set(`s1n_${k}`, fmt(a.n, a.cnt, a.pick));
+    set(`s1p_${k}`, a.cnt ? a.pts : '—');
   });
 }
 
