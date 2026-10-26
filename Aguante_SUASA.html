@@ -29,7 +29,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20261024-005";
+const VERSION = "20261026-001";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -1519,6 +1519,15 @@ function buildStbl1Section() {
       `<td class="c-s1" id="s1g_${h}">·</td><td class="c-s1">${strokes(p.hcp,hcpH)}</td>` +
       `<td class="c-s1" id="s1n_${h}">·</td><td class="c-s1" id="s1p_${h}">·</td>`;
     tbody.appendChild(tr);
+    // Fila intercalada: golpes / neto / pts acumulados del tramo (oculta hasta que el hoyo se juegue)
+    // En el 9 y el 18 no va: el total se ve en la fila Ida / Vuelta
+    if (h === 8 || h === 17) return;
+    const tra = document.createElement('tr');
+    tra.className = 'r-acc'; tra.id = `s1acc_${h}`; tra.style.display = 'none';
+    tra.innerHTML = '<td colspan="3"></td>' +
+      `<td class="c-s1" id="s1ag_${h}"></td><td class="c-s1"></td>` +
+      `<td class="c-s1" id="s1an_${h}"></td><td class="c-s1" id="s1ap_${h}"></td>`;
+    tbody.appendChild(tra);
   }
   function addRowS1(label, key, css, from, to) {
     const parSum = course.slice(from,to).reduce((s,[x])=>s+x,0);
@@ -1547,10 +1556,12 @@ function recalcStbl1() {
     const tdN = document.getElementById(`s1n_${h}`);
     const tdP = document.getElementById(`s1p_${h}`);
     if (!tdG) continue;
+    const trAcc = document.getElementById(`s1acc_${h}`);
     const g = parseInt(raw);
     const isPickup = (raw === 'X');
     if (!isPickup && (raw===''||isNaN(g)||g<=0)) {
       tdG.textContent = tdN.textContent = tdP.textContent = '·';
+      if (trAcc) trAcc.style.display = 'none';
       continue;
     }
     const [par,hcpH] = course[h];
@@ -1564,6 +1575,14 @@ function recalcStbl1() {
       const pts = puntos(g, par, p.hcp, hcpH);
       a.g += g; a.n += g - stk; a.pts += pts;
       tdG.textContent = g; tdN.textContent = g - stk; tdP.textContent = pts;
+    }
+    // Acumulado del tramo hasta este hoyo (la vuelta arranca de 0, igual que fourball y 4-2-0)
+    if (trAcc) {
+      const fa = v => a.pick ? (v > 0 ? v + '*' : 'X') : v;
+      set(`s1ag_${h}`, fa(a.g));
+      set(`s1an_${h}`, fa(a.n));
+      set(`s1ap_${h}`, a.pts);
+      trAcc.style.display = '';
     }
   }
   // Con hoyos levantados, golpes y neto muestran el parcial con '*' (igual que la tarjeta)
@@ -1605,6 +1624,14 @@ function buildMatchSection() {
     let html = `<td class="c-fix">${h+1}</td><td class="c-fix">${par}</td><td class="c-fix">${hcpH}</td>`;
     players.forEach((_,j) => html += `<td class="c-match" id="pm_${j}_${h}">·</td>`);
     tr.innerHTML = html; tbody.appendChild(tr);
+    // Fila intercalada: hoyos arriba del que va ganando (oculta hasta que el hoyo se juegue)
+    // En el 9 y el 18 no va: el resultado se ve en la fila Ida / Vuelta
+    if (h === 8 || h === 17) return;
+    const tra = document.createElement('tr');
+    tra.className = 'r-acc'; tra.id = `pmacc_${h}`; tra.style.display = 'none';
+    let ha = '<td colspan="3"></td>';
+    players.forEach((_,j) => ha += `<td class="c-match" id="pma_${j}_${h}"></td>`);
+    tra.innerHTML = ha; tbody.appendChild(tra);
   }
   function addRowMatch(label, mkId, css) {
     const tr = document.createElement('tr'); tr.className = css;
@@ -1640,8 +1667,23 @@ function calcHoleMatch(h) {
 function recalcMatch() {
   const f9=[0,0], b9=[0,0];
   let f9ok=false, b9ok=false;
+  const acc=[0,0];
   for (let h=0; h<18; h++) {
+    if (h===9) acc.fill(0);   // la vuelta acumula independiente de la ida (igual que fourball y 4-2-0)
     const pts = calcHoleMatch(h);
+    const trAcc = document.getElementById(`pmacc_${h}`);
+    if (pts) {
+      acc[0]+=pts[0]; acc[1]+=pts[1];
+      const mn = Math.min(acc[0], acc[1]);
+      for (let j=0; j<2; j++) {
+        const ta = document.getElementById(`pma_${j}_${h}`);
+        if (!ta) continue;
+        const d = acc[j]-mn;
+        ta.textContent = d===0 ? '—' : d;
+        ta.className = 'c-match' + (d===0 ? ' acc-0' : '');
+      }
+      if (trAcc) trAcc.style.display = '';
+    } else if (trAcc) trAcc.style.display = 'none';
     for (let j=0; j<2; j++) {
       const td = document.getElementById(`pm_${j}_${h}`);
       if (!td) continue;
