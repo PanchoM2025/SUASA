@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>HCP de Cacho</title>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cacho">
+<style>
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+body { font-family:Arial,sans-serif; background:#1a472a; color:#fff; min-height:100vh; }
+#app { max-width:460px; margin:0 auto; padding:32px 20px 40px; }
+h1 { color:#ffd700; font-size:24px; text-align:center; letter-spacing:1px; margin-bottom:4px; }
+.sub { color:#a8d8a8; font-size:13px; text-align:center; margin-bottom:22px; }
+.team { background:#0d3318; border:1px solid #3d8a3d; border-radius:10px; padding:14px 14px 6px; margin-bottom:14px; }
+.team h2 { color:#ffd700; font-size:15px; margin-bottom:10px; letter-spacing:.5px; }
+.field-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.field-row label { color:#a8d8a8; font-size:14px; flex:1; }
+.field-row .cat { color:#87ceeb; font-size:12px; width:40px; text-align:right; }
+input.hcp {
+  width:76px; background:#e8f5e9; color:#1a3a1a; border:none; border-radius:4px;
+  padding:8px 10px; font-size:18px; font-weight:bold; text-align:center;
+  -webkit-appearance:none; appearance:none;
+}
+input.hcp:focus { outline:2px solid #ffd700; }
+input.bad { outline:2px solid #f08080; }
+.cacho-fixed { color:#d8f0d8; font-size:14px; padding:2px 0 10px; }
+#result { background:#2d6a2d; border:2px solid #ffd700; border-radius:12px; padding:18px 14px; text-align:center; margin:18px 0 14px; }
+#result .lbl { color:#a8d8a8; font-size:14px; }
+#result .big { color:#ffd700; font-size:56px; font-weight:bold; line-height:1.1; margin:4px 0; }
+#result .det { color:#d8f0d8; font-size:13px; line-height:1.5; }
+#result .det b { color:#fff; }
+#result.calc .big { opacity:.4; }
+.note { background:#0d3318; border-radius:10px; padding:12px 14px; color:#d8f0d8; font-size:13px; line-height:1.6; }
+.note b { color:#ffd700; }
+.note p + p { margin-top:8px; }
+.btn-instrucciones {
+  display:block; width:100%; padding:11px 8px; background:#1a3a5a; color:#87ceeb;
+  font-size:14px; font-weight:bold; border:none; border-radius:8px;
+  cursor:pointer; touch-action:manipulation; -webkit-user-select:none; user-select:none;
+}
+.btn-instrucciones:active { background:#254d7a; }
+#modal-instrucciones {
+  display:none; position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,0.80);
+  justify-content:center; align-items:center; padding:16px;
+}
+#modal-instrucciones.open { display:flex; }
+.modal-box {
+  background:#0d3318; border:1px solid #3d8a3d; border-radius:12px; padding:22px 18px;
+  max-width:420px; width:100%; max-height:calc(100vh - 48px); overflow-y:auto;
+}
+.modal-box h2 { color:#ffd700; font-size:17px; text-align:center; margin-bottom:14px; }
+.modal-box p { color:#d8f0d8; font-size:14px; line-height:1.6; margin-bottom:10px; }
+.modal-box b { color:#ffd700; }
+.modal-box .btn-cerrar {
+  display:block; width:100%; margin-top:8px; padding:11px; background:#2d6a2d; color:#ffd700;
+  font-size:15px; font-weight:bold; border:none; border-radius:8px; cursor:pointer;
+}
+.ver { color:#5a8a5a; font-size:11px; text-align:center; margin-top:14px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>HCP de Cacho</h1>
+  <div class="sub">Fourball a la 1ª y a la 2ª &middot; HCP al 85%</div>
+
+  <div class="team">
+    <h2>Equipo A</h2>
+    <div class="field-row"><label for="a1">HCP jugador 1</label><span class="cat" id="a1c"></span><input type="text" class="hcp" id="a1" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" value="5"></div>
+    <div class="field-row"><label for="a2">HCP jugador 2</label><span class="cat" id="a2c"></span><input type="text" class="hcp" id="a2" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" value="5"></div>
+  </div>
+
+  <div class="team">
+    <h2>Equipo B</h2>
+    <div class="field-row"><label for="b1">HCP compañero de Cacho</label><span class="cat" id="b1c"></span><input type="text" class="hcp" id="b1" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" value="26"></div>
+    <div class="cacho-fixed">+ Cacho (bogey de gross en todos los hoyos)</div>
+  </div>
+
+  <div id="result">
+    <div class="lbl">Cargale a Cacho HCP</div>
+    <div class="big" id="cacho">–</div>
+    <div class="det" id="det"></div>
+  </div>
+
+  <button class="btn-instrucciones" id="btn-instr">Instrucciones</button>
+  <div class="ver" id="ver"></div>
+</div>
+
+<div id="modal-instrucciones">
+  <div class="modal-box">
+    <h2>Instrucciones</h2>
+    <p><b>Para qué sirve:</b> cuando falta uno para el fourball y juega Cacho, te dice qué HCP darle para que el partido quede parejo.</p>
+    <p><b>Cómo se usa:</b> cargá el HCP de juego de cada jugador en esa cancha. En la tarjeta SUASA cargá a Cacho como un jugador más, con el HCP que da esta página.</p>
+    <p><b>Cómo se calcula:</b> se simulan miles de vueltas de fourball a la 1ª y a la 2ª (2 puntos el mejor neto, 1 punto el segundo), con HCP al 85%. Cada jugador hace en cada hoyo un score parecido al de un golfista promedio de su HCP: algunos pares y birdies netos, otros dobles, y levanta cuando se le complica. Los de HCP alto son más irregulares que los de HCP bajo. Se prueba con distintos HCP para Cacho hasta encontrar el que le da a cada equipo las mismas chances de ganar.</p>
+    <p><b>Cancha:</b> el resultado casi no depende de la cancha, porque se mide en golpes sobre el par y en qué hoyos recibe golpes cada uno.</p>
+    <button class="btn-cerrar" id="btn-cerrar">Cerrar</button>
+  </div>
+</div>
+
+<script>
+const VERSION = "20261026-004";
+document.getElementById('ver').textContent = 'Versión ' + VERSION;
+
+// ── Simulación ──────────────────────────────────────────────────────────────
+// Todo se mide en golpes sobre el par de cada hoyo, así no depende de la cancha.
+const SIMS = 3000;   // vueltas simuladas por cada modelo
+const MAX_HCP = 54;
+
+function strokes(h, si) { return Math.floor(h / 18) + ((h % 18) >= si ? 1 : 0); }
+const play = h => Math.round(h * 0.85);
+
+// Generador de números al azar con semilla fija: mismo dato, mismo resultado.
+function rng(seed) {
+  return function () {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+// Dos modelos de jugador: uno que juega algo peor que su HCP y otro más cerca.
+const MODELS = [
+  H => ({ gap: (2 + 0.1 * H) / 18, sd: 0.65 + 0.025 * H }),
+  H => ({ gap: (1 + 0.05 * H) / 18, sd: 0.6 + 0.02 * H }),
+];
+
+// Puntos del Equipo B (compañero + Cacho) menos los del Equipo A, por vuelta.
+function simulate(model, a1, a2, b1, cachoHcp) {
+  const rand = rng(12345);
+  const gauss = () => { let u = 0; while (!u) u = rand(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * rand()); };
+  const par = [a1, a2, b1].map(h => ({ h, p: play(h), m: model(h) }));
+  const pc = play(cachoHcp);
+  const net = (pl, si) => {
+    const st = strokes(pl.h, si);
+    let g = Math.round(st + pl.m.gap + 0.15 + pl.m.sd * gauss());
+    g = Math.max(-2, Math.min(g, st + 3));        // levanta después del triple de gross sobre sus golpes
+    return g - strokes(pl.p, si);
+  };
+  let total = 0, winB = 0, winA = 0;
+  for (let i = 0; i < SIMS; i++) {
+    let pts = 0;
+    for (let si = 1; si <= 18; si++) {
+      const A = [net(par[0], si), net(par[1], si)].sort((x, y) => x - y);
+      const B = [net(par[2], si), 1 - strokes(pc, si)].sort((x, y) => x - y);
+      pts += 2 * Math.sign(A[0] - B[0]) + Math.sign(A[1] - B[1]);
+    }
+    total += pts; if (pts > 0) winB++; else if (pts < 0) winA++;
+  }
+  return { diff: total / SIMS, winB: winB / SIMS, winA: winA / SIMS };
+}
+
+function evalCacho(a1, a2, b1, c) {
+  const r = MODELS.map(m => simulate(m, a1, a2, b1, c));
+  return { diff: (r[0].diff + r[1].diff) / 2, winB: (r[0].winB + r[1].winB) / 2, winA: (r[0].winA + r[1].winA) / 2 };
+}
+
+// Busca el HCP de Cacho que deja la diferencia de puntos más cerca de cero.
+function findCacho(a1, a2, b1) {
+  let lo = 0, hi = MAX_HCP;
+  if (evalCacho(a1, a2, b1, lo).diff >= 0) return lo;
+  if (evalCacho(a1, a2, b1, hi).diff <= 0) return hi;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (evalCacho(a1, a2, b1, mid).diff < 0) lo = mid; else hi = mid;
+  }
+  return Math.abs(evalCacho(a1, a2, b1, lo).diff) <= Math.abs(evalCacho(a1, a2, b1, hi).diff) ? lo : hi;
+}
+
+// ── Pantalla ────────────────────────────────────────────────────────────────
+const ids = ['a1', 'a2', 'b1'];
+const cat = h => h <= 10 ? 'JBH' : h <= 20 ? 'JMH' : 'JAH';
+
+function readHcp(id) {
+  const el = document.getElementById(id);
+  const v = el.value.trim();
+  const n = Number(v);
+  const ok = v !== '' && Number.isInteger(n) && n >= 0 && n <= MAX_HCP;
+  el.classList.toggle('bad', !ok);
+  document.getElementById(id + 'c').textContent = ok ? cat(n) : '';
+  return ok ? n : null;
+}
+
+function save(vals) { try { localStorage.setItem('cacho_hcp', JSON.stringify(vals)); } catch (e) {} }
+function load() {
+  try {
+    const v = JSON.parse(localStorage.getItem('cacho_hcp'));
+    if (v) ids.forEach(id => { if (v[id] != null) document.getElementById(id).value = v[id]; });
+  } catch (e) {}
+}
+
+let timer = null;
+function update() {
+  const vals = {};
+  ids.forEach(id => vals[id] = readHcp(id));
+  const box = document.getElementById('result');
+  if (ids.some(id => vals[id] === null)) {
+    document.getElementById('cacho').textContent = '–';
+    document.getElementById('det').textContent = 'Cargá HCP enteros de 0 a ' + MAX_HCP + '.';
+    return;
+  }
+  save(vals);
+  box.classList.add('calc');
+  clearTimeout(timer);
+  timer = setTimeout(() => {
+    const { a1, a2, b1 } = vals;
+    const c = findCacho(a1, a2, b1);
+    document.getElementById('cacho').textContent = c;
+    document.getElementById('det').textContent = '';
+    box.classList.remove('calc');
+  }, 250);
+}
+
+const modal = document.getElementById('modal-instrucciones');
+document.getElementById('btn-instr').addEventListener('click', () => modal.classList.add('open'));
+document.getElementById('btn-cerrar').addEventListener('click', () => modal.classList.remove('open'));
+modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
+
+load();
+ids.forEach(id => {
+  const el = document.getElementById(id);
+  // Solo números. Al tocar la casilla se vacía para escribir el HCP nuevo;
+  // si se sale sin escribir nada, vuelve el que estaba.
+  el.addEventListener('beforeinput', e => { if (e.data && /\D/.test(e.data)) e.preventDefault(); });
+  el.addEventListener('input', () => {
+    const limpio = el.value.replace(/\D/g, '');
+    if (limpio !== el.value) el.value = limpio;
+    update();
+  });
+  el.addEventListener('focus', () => { el.dataset.prev = el.value; el.value = ''; });
+  el.addEventListener('blur', () => { if (el.value === '') { el.value = el.dataset.prev || ''; update(); } });
+});
+update();
+</script>
+</body>
+</html>
