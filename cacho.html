@@ -93,20 +93,21 @@ input.bad { outline:2px solid #f08080; }
     <h2>Instrucciones</h2>
     <p><b>Para qué sirve:</b> cuando falta uno para el fourball y juega Cacho, te dice qué HCP darle para que el partido quede parejo.</p>
     <p><b>Cómo se usa:</b> cargá el HCP de juego de cada jugador en esa cancha. En la tarjeta SUASA cargá a Cacho como un jugador más, con el HCP que da esta página.</p>
-    <p><b>Cómo se calcula:</b> se simulan miles de vueltas de fourball a la 1ª y a la 2ª (2 puntos el mejor neto, 1 punto el segundo), con HCP al 85%. Cada jugador hace en cada hoyo un score parecido al de un golfista promedio de su HCP: algunos pares y birdies netos, otros dobles, y levanta cuando se le complica. Los de HCP alto son más irregulares que los de HCP bajo. Se prueba con distintos HCP para Cacho hasta encontrar el que le da a cada equipo las mismas chances de ganar.</p>
+    <p><b>Cómo se calcula:</b> se simulan miles de vueltas de fourball a la 1ª y a la 2ª (2 puntos el mejor neto, 1 punto el segundo), con HCP al 85%. Cada jugador hace en cada hoyo un score parecido al de un golfista promedio de su HCP: algunos pares y birdies netos, otros dobles, y levanta cuando se le complica. Los de HCP alto son más irregulares que los de HCP bajo. Se prueba con distintos HCP para Cacho hasta encontrar el que le da a cada equipo las mismas chances de ganar. A ese número se le suman <b>2 puntos</b>, para que el equipo de Cacho tenga un poco más de chances (gana alrededor del 55 al 60% de las veces).</p>
     <p><b>Cancha:</b> el resultado casi no depende de la cancha, porque se mide en golpes sobre el par y en qué hoyos recibe golpes cada uno.</p>
     <button class="btn-cerrar" id="btn-cerrar">Cerrar</button>
   </div>
 </div>
 
 <script>
-const VERSION = "20261026-004";
+const VERSION = "20261027-001";
 document.getElementById('ver').textContent = 'Versión ' + VERSION;
 
 // ── Simulación ──────────────────────────────────────────────────────────────
 // Todo se mide en golpes sobre el par de cada hoyo, así no depende de la cancha.
 const SIMS = 3000;   // vueltas simuladas por cada modelo
 const MAX_HCP = 54;
+const VENTAJA_CACHO = 2;   // puntos de HCP que se le suman a Cacho sobre el valor parejo
 
 function strokes(h, si) { return Math.floor(h / 18) + ((h % 18) >= si ? 1 : 0); }
 const play = h => Math.round(h * 0.85);
@@ -206,7 +207,7 @@ function update() {
   clearTimeout(timer);
   timer = setTimeout(() => {
     const { a1, a2, b1 } = vals;
-    const c = findCacho(a1, a2, b1);
+    const c = Math.min(findCacho(a1, a2, b1) + VENTAJA_CACHO, MAX_HCP);
     document.getElementById('cacho').textContent = c;
     document.getElementById('det').textContent = '';
     box.classList.remove('calc');
