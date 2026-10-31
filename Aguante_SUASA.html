@@ -29,7 +29,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20261026-001";
+const VERSION = "20261031-001";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -398,6 +398,36 @@ td.mc-lose { color:#555 !important; }
 }
 .btn-share:active { background:#0d3320; }
 
+/* Mientras se saca la foto de la tarjeta: tablas completas (sin scroll) y sin botones */
+#scorecard.capturing .sc-wrap { overflow:visible !important; }
+#scorecard.capturing .btn-new-row { display:none !important; }
+
+/* ── MODAL IMAGEN DE LA TARJETA (compartir / guardar) ── */
+#modal-shot {
+  display:none; position:fixed; inset:0; z-index:1200;
+  background:rgba(0,0,0,0.94); flex-direction:column; padding:12px;
+  padding-top:max(12px, env(safe-area-inset-top));
+  padding-bottom:max(12px, env(safe-area-inset-bottom));
+}
+#modal-shot.open { display:flex; }
+.shot-hint { color:#a8d8a8; font-size:13px; text-align:center; margin-bottom:8px; line-height:1.35; }
+.shot-img-wrap {
+  flex:1; overflow:auto; -webkit-overflow-scrolling:touch;
+  border:2px solid #ffd700; border-radius:10px; background:#0d3318;
+}
+.shot-img-wrap img {
+  display:block; width:100%; height:auto;
+  -webkit-touch-callout:default; -webkit-user-select:auto; user-select:auto;
+}
+.shot-btn-row { display:flex; gap:8px; margin-top:10px; }
+.shot-btn-row button {
+  flex:1; padding:12px 6px; font-size:14px; font-weight:bold; border-radius:10px;
+  cursor:pointer; touch-action:manipulation; line-height:1.3; border:2px solid;
+}
+.shot-share { background:#1a5a3a; color:#25d366; border-color:#25d366; }
+.shot-save  { background:#1a3a5a; color:#7ec8ff; border-color:#7ec8ff; }
+.shot-close { background:#4a1a1a; color:#f08080; border-color:#f08080; }
+
 /* ── MODAL MODO DE JUEGO ── */
 .mode-btn {
   width:100%; padding:16px 12px; background:#1a472a; color:#ffd700;
@@ -559,6 +589,17 @@ td.mc-lose { color:#555 !important; }
     <button class="btn-share" onclick="shareCard()">📤 Compartir<br>Tarjeta</button>
     <button class="btn-back"  onclick="goBack()">&#x21A9; Regresar</button>
     <button class="btn-new"   onclick="newGame()">&#x21A9; Nueva<br>Partida</button>
+  </div>
+</div>
+
+<!-- ── MODAL IMAGEN DE LA TARJETA ── -->
+<div id="modal-shot">
+  <div class="shot-hint" id="shot-hint">Tarjeta lista</div>
+  <div class="shot-img-wrap"><img id="shot-img" alt="Tarjeta de score"></div>
+  <div class="shot-btn-row">
+    <button class="shot-share" id="shot-share" onclick="shotShare()">📤 Compartir</button>
+    <button class="shot-save" onclick="shotSave()">💾 Guardar</button>
+    <button class="shot-close" onclick="shotClose()">✕ Cerrar</button>
   </div>
 </div>
 
@@ -1100,14 +1141,44 @@ function shareCard() {
   btn.innerHTML = '⏳ Capturando...';
   btn.disabled = true;
 
+  function restoreBtn() { btn.innerHTML = orig; btn.disabled = false; }
+
   function doCapture() {
     const el = document.getElementById('scorecard');
+    const prevScroll = window.scrollY;
+    const prevWidth = el.style.width;
+
+    // Mostrar las tablas enteras (sin scroll lateral) para que salga todo
+    el.classList.add('capturing');
+    let fullW = el.scrollWidth;
+    el.querySelectorAll('.sc-wrap').forEach(function(w) {
+      fullW = Math.max(fullW, w.scrollWidth + 20);
+    });
+    el.style.width = fullW + 'px';
+    window.scrollTo(0, 0);
+    const fullH = el.scrollHeight;
+
+    // iPhone no dibuja imágenes de más de ~16 millones de píxeles: bajar la escala si hace falta
+    const scale = Math.max(0.5, Math.min(2, Math.sqrt(15000000 / (fullW * fullH))));
+
+    function undo() {
+      el.classList.remove('capturing');
+      el.style.width = prevWidth;
+      window.scrollTo(0, prevScroll);
+    }
+
     html2canvas(el, {
       backgroundColor: '#0d3318',
-      scale: 2,
+      scale: scale,
       useCORS: true,
-      logging: false
+      logging: false,
+      width: fullW,
+      height: fullH,
+      windowWidth: Math.max(fullW, window.innerWidth),
+      scrollX: 0,
+      scrollY: 0
     }).then(function(canvas) {
+      undo();
       // Añadir pie "SUASapp ⛳" en el canvas
       const ctx = canvas.getContext('2d');
       const hoy = new Date().toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' });
@@ -1121,25 +1192,28 @@ function shareCard() {
       ctx.fillText(pie, px, py);
 
       canvas.toBlob(function(blob) {
-        btn.innerHTML = orig;
-        btn.disabled = false;
-        const file = new File([blob], 'SUASapp-tarjeta.png', { type: 'image/png' });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          navigator.share({ files: [file], title: 'SUASapp — Tarjeta de Score' }).catch(function() {});
+        restoreBtn();
+        if (!blob) { alert('No se pudo armar la imagen de la tarjeta.'); return; }
+        _shotBlob = blob;
+        _shotFile = new File([blob], 'SUASapp-tarjeta.png', { type: 'image/png' });
+
+        // iPhone: Safari no deja compartir después de la espera de armar la imagen.
+        // Se muestra la imagen y el usuario toca "Compartir" (o la mantiene apretada).
+        if (isIOS()) { openShot(); return; }
+
+        // Android: compartir directo como siempre; si falla, mostrar la imagen
+        if (navigator.canShare && navigator.canShare({ files: [_shotFile] })) {
+          navigator.share({ files: [_shotFile], title: 'SUASapp — Tarjeta de Score' })
+            .catch(function(e) { if (!e || e.name !== 'AbortError') openShot(); });
         } else {
-          // fallback: descargar
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url; a.download = 'SUASapp-tarjeta.png';
-          document.body.appendChild(a); a.click();
-          document.body.removeChild(a);
-          setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+          openShot();
         }
       }, 'image/png');
     }).catch(function(e) {
-      btn.innerHTML = orig;
-      btn.disabled = false;
+      undo();
+      restoreBtn();
       console.error('html2canvas:', e);
+      alert('No se pudo armar la imagen de la tarjeta.');
     });
   }
 
@@ -1149,9 +1223,54 @@ function shareCard() {
     const s = document.createElement('script');
     s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
     s.onload = doCapture;
-    s.onerror = function() { btn.innerHTML = orig; btn.disabled = false; };
+    s.onerror = function() {
+      restoreBtn();
+      alert('No se pudo cargar la herramienta para la imagen. Revisá la conexión a internet.');
+    };
     document.head.appendChild(s);
   }
+}
+
+// ── Ventana con la imagen de la tarjeta ──
+let _shotBlob = null, _shotFile = null, _shotUrl = null;
+
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function openShot() {
+  if (_shotUrl) URL.revokeObjectURL(_shotUrl);
+  _shotUrl = URL.createObjectURL(_shotBlob);
+  document.getElementById('shot-img').src = _shotUrl;
+  const canShare = !!(navigator.canShare && navigator.canShare({ files: [_shotFile] }));
+  document.getElementById('shot-share').style.display = canShare ? '' : 'none';
+  document.getElementById('shot-hint').innerHTML = isIOS()
+    ? 'Tocá <b>Compartir</b> para mandarla por WhatsApp,<br>o mantené apretada la imagen &rarr; <b>Guardar en Fotos</b>'
+    : 'Tocá <b>Compartir</b> o <b>Guardar</b>';
+  document.getElementById('modal-shot').classList.add('open');
+}
+
+function shotShare() {
+  if (!_shotFile) return;
+  navigator.share({ files: [_shotFile], title: 'SUASapp — Tarjeta de Score' })
+    .catch(function(e) {
+      if (e && e.name !== 'AbortError') alert('No se pudo compartir. Mantené apretada la imagen para guardarla.');
+    });
+}
+
+function shotSave() {
+  if (!_shotUrl) return;
+  const a = document.createElement('a');
+  a.href = _shotUrl; a.download = 'SUASapp-tarjeta.png';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+}
+
+function shotClose() {
+  document.getElementById('modal-shot').classList.remove('open');
+  document.getElementById('shot-img').removeAttribute('src');
+  if (_shotUrl) { URL.revokeObjectURL(_shotUrl); _shotUrl = null; }
 }
 
 function goBack() {
