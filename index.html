@@ -29,7 +29,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20261107-002";
+const VERSION = "20261107-003";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -346,6 +346,38 @@ td.mc-lose { color:#555 !important; }
   background:#ffd700; color:#1a3a1a; font-weight:bold; font-size:14px;
 }
 
+/* ── ANOTAR CON VOZ ── */
+#voz-bar { text-align:right; margin:0 0 6px; }
+#voz-toggle {
+  background:#0d3318; color:#ffd700; border:1px solid #ffd700; border-radius:14px;
+  padding:5px 12px; font-size:12px; font-weight:bold; touch-action:manipulation;
+}
+#voz-toggle.off { color:#8aa88a; border-color:#5f8f6a; }
+#modal-voz {
+  display:none; position:fixed; inset:0; z-index:1200;
+  background:rgba(0,0,0,0.85); justify-content:center; align-items:center; padding:20px;
+}
+#modal-voz.open { display:flex; }
+.voz-box {
+  background:#0d3318; border:2px solid #ffd700; border-radius:14px;
+  padding:18px 16px; max-width:360px; width:100%; text-align:center;
+}
+.voz-hole  { color:#ffd700; font-size:20px; font-weight:bold; }
+.voz-names { color:#a8d8a8; font-size:14px; margin:4px 0 12px; }
+.voz-mic {
+  width:96px; height:96px; border-radius:50%; border:3px solid #ffd700;
+  background:#1a472a; font-size:44px; touch-action:manipulation;
+}
+.voz-mic.on { background:#b8860b; animation:vozPulse 1s infinite; }
+@keyframes vozPulse { 0%,100% { box-shadow:0 0 0 0 rgba(255,215,0,.6); } 50% { box-shadow:0 0 0 14px rgba(255,215,0,0); } }
+.voz-msg   { color:#e8ffe8; font-size:14px; margin-top:12px; min-height:20px; }
+.voz-heard { color:#ffd700; font-size:28px; font-weight:bold; margin-top:6px; min-height:36px; letter-spacing:1px; }
+.voz-btns  { display:flex; gap:8px; margin-top:14px; }
+.voz-btns button {
+  flex:1; padding:11px 6px; border-radius:8px; border:none; font-size:15px; font-weight:bold;
+  background:#2d6a2d; color:#fff; touch-action:manipulation;
+}
+
 /* ── MODAL RESTAURAR ── */
 #modal-restore {
   display:none; position:fixed; inset:0; z-index:1100;
@@ -416,6 +448,7 @@ td.mc-lose { color:#555 !important; }
 /* Mientras se saca la foto de la tarjeta: tablas completas (sin scroll) y sin botones */
 #scorecard.capturing .sc-wrap { overflow:visible !important; }
 #scorecard.capturing .btn-new-row { display:none !important; }
+#scorecard.capturing #voz-bar { display:none !important; }
 
 /* ── MODAL IMAGEN DE LA TARJETA (compartir / guardar) ── */
 #modal-shot {
@@ -562,6 +595,9 @@ td.mc-lose { color:#555 !important; }
 <!-- ── SCORECARD ── -->
 <div id="scorecard">
   <p id="sc-title"></p>
+  <div id="voz-bar" style="display:none">
+    <button id="voz-toggle" onclick="toggleVoz()">🎤 Anotar con voz: SÍ</button>
+  </div>
   <div class="sc-wrap">
     <table class="sc" id="sc-tbl"></table>
   </div>
@@ -626,6 +662,21 @@ td.mc-lose { color:#555 !important; }
 </div>
 
 <!-- ── MODAL RESTAURAR PARTIDA ── -->
+<!-- ── MODAL ANOTAR CON VOZ ── -->
+<div id="modal-voz">
+  <div class="voz-box">
+    <div class="voz-hole" id="voz-hole"></div>
+    <div class="voz-names" id="voz-names"></div>
+    <button class="voz-mic" id="voz-mic" onclick="vozStart()">🎤</button>
+    <div class="voz-msg" id="voz-msg"></div>
+    <div class="voz-heard" id="voz-heard"></div>
+    <div class="voz-btns">
+      <button onclick="vozTeclado()">⌨️ Escribir</button>
+      <button onclick="vozCerrar()">✕ Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <div id="modal-restore">
   <div class="restore-box">
     <h2>⚡ Partida en progreso</h2>
@@ -1048,6 +1099,7 @@ function populateHcpTable() {
   populateHcpTable();
   restoreState();
   setupStorageSafety();
+  setTimeout(updateVozBar, 0);   // después de que se lea todo el código de la voz
 })();
 
 // ── Protección del guardado (sobre todo iPhone) ─────────────────────────────
@@ -1408,6 +1460,8 @@ function buildScorecard() {
         this.dataset.prev = v;
         recalcAll();
       });
+      // Anotar con voz: al tocar una casilla de un hoyo vacío se abre el micrófono
+      el.addEventListener('focus', function() { vozOnFocus(this, h, j); });
       // Si sale de la casilla vacía y otro jugador ya cargó ese hoyo → X (pickup)
       el.addEventListener('blur', function() {
         if (this.value.trim() !== '') return;
@@ -1513,6 +1567,191 @@ function recalcAll() {
 
 function set(id, val) {
   const el = document.getElementById(id); if (el) el.textContent = val;
+}
+
+// ════ ANOTAR CON VOZ ════
+// Al tocar una casilla de un hoyo que está vacío se abre el micrófono. Se dicen
+// los scores ("4 6 3") y se cargan desde esa casilla hacia la derecha.
+// No aparece si el teléfono no tiene reconocimiento de voz (iPhone desde el
+// ícono de inicio), si no hay internet o si se apagó con el botón "Anotar con voz".
+const VOZ_KEY = 'suasa_voz_off';
+const VozSR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const _voz = { rec: null, h: 0, j: 0, skipFocus: false, offSesion: false, closeTimer: null };
+
+function vozApagada() {
+  try { return localStorage.getItem(VOZ_KEY) === '1'; } catch(e) { return false; }
+}
+
+function updateVozBar() {
+  const bar = document.getElementById('voz-bar'), btn = document.getElementById('voz-toggle');
+  if (!bar || !btn) return;
+  bar.style.display = VozSR ? '' : 'none';
+  const off = vozApagada();
+  btn.textContent = off ? '🎤 Anotar con voz: NO' : '🎤 Anotar con voz: SÍ';
+  btn.className = off ? 'off' : '';
+}
+
+function toggleVoz() {
+  try { localStorage.setItem(VOZ_KEY, vozApagada() ? '0' : '1'); } catch(e) {}
+  _voz.offSesion = false;
+  updateVozBar();
+}
+
+function holeVacio(h) {
+  return players.every((_, k) => {
+    const o = document.getElementById(`g${k}_${h}`);
+    return !o || o.value.trim() === '';
+  });
+}
+
+function vozOnFocus(el, h, j) {
+  if (_voz.skipFocus) { _voz.skipFocus = false; return; }
+  if (!VozSR || vozApagada() || _voz.offSesion) return;
+  if (navigator.onLine === false) return;          // sin señal: teclado
+  if (!holeVacio(h)) return;                        // corrigiendo un hoyo ya cargado: teclado
+  _voz.h = h; _voz.j = j;
+  el.blur();
+  document.getElementById('voz-hole').textContent = `Hoyo ${h + 1}`;
+  document.getElementById('voz-names').textContent = players.slice(j).map(p => p.ini).join('  ·  ');
+  document.getElementById('voz-heard').textContent = '';
+  document.getElementById('modal-voz').classList.add('open');
+  vozStart();
+}
+
+function vozMsg(t) { document.getElementById('voz-msg').textContent = t; }
+function vozMicOn(on) { document.getElementById('voz-mic').classList.toggle('on', on); }
+
+function vozStart() {
+  clearTimeout(_voz.closeTimer);
+  try { if (_voz.rec) _voz.rec.abort(); } catch(e) {}
+  let rec;
+  try { rec = new VozSR(); } catch(e) { vozMsg('Este teléfono no permite usar la voz.'); return; }
+  _voz.rec = rec;
+  rec.lang = 'es-AR';
+  rec.interimResults = true;
+  rec.maxAlternatives = 5;
+  rec.continuous = false;
+  let terminado = false;
+  rec.onresult = ev => {
+    if (_voz.rec !== rec) return;
+    const res = ev.results[ev.results.length - 1];
+    const alts = [];
+    for (let i = 0; i < res.length; i++) alts.push(res[i].transcript);
+    document.getElementById('voz-heard').textContent = alts[0] || '';
+    if (res.isFinal) { terminado = true; vozProcesar(alts); }
+  };
+  rec.onerror = ev => {
+    if (_voz.rec !== rec) return;
+    terminado = true; vozMicOn(false);
+    const e = ev.error;
+    if (e === 'aborted') return;
+    if (e === 'not-allowed' || e === 'service-not-allowed') {
+      _voz.offSesion = true;
+      vozMsg('El teléfono no dejó usar el micrófono. Anotá con el teclado.');
+    } else if (e === 'network') {
+      vozMsg('Sin señal: anotá con el teclado.');
+    } else if (e === 'no-speech') {
+      vozMsg('No escuché nada. Tocá 🎤 para repetir.');
+    } else {
+      vozMsg('No se pudo usar la voz. Tocá 🎤 o anotá con el teclado.');
+    }
+  };
+  rec.onend = () => {
+    if (_voz.rec !== rec) return;
+    vozMicOn(false);
+    if (!terminado) vozMsg('No escuché nada. Tocá 🎤 para repetir.');
+  };
+  try {
+    rec.start();
+    vozMicOn(true);
+    vozMsg('Escuchando… decí los scores');
+  } catch(e) {
+    vozMicOn(false);
+    vozMsg('Tocá 🎤 para hablar.');
+  }
+}
+
+// Convierte lo que se dijo en una lista de scores ('1'..'15' o 'X').
+// n = cuántas casillas hay para llenar: si el teléfono junta los números
+// ("463"), se separan de forma que alcancen justo para esas casillas.
+function vozParse(texto, n) {
+  const W = { cero:'0', un:'1', uno:'1', una:'1', dos:'2', tres:'3', cuatro:'4', cinco:'5',
+    seis:'6', siete:'7', ocho:'8', nueve:'9', diez:'10', once:'11', doce:'12', trece:'13',
+    catorce:'14', quince:'15', x:'X', equis:'X', levanto:'X', levante:'X', levantado:'X', levantada:'X' };
+  const t = String(texto || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/(\d)([a-z])/g, '$1 $2').replace(/([a-z])(\d)/g, '$1 $2');
+  const toks = t.replace(/[,.;:\-\/·]+/g, ' ').split(/\s+/).filter(Boolean);
+  // Cada token da una o varias formas de leerse (la primera es la preferida)
+  const seg = s => {
+    if (s === '') return [[]];
+    const out = [];
+    if (s.length >= 2) {
+      const two = parseInt(s.slice(0, 2), 10);
+      if (s[0] === '1' && two >= 10 && two <= 15) seg(s.slice(2)).forEach(r => out.push([s.slice(0, 2), ...r]));
+    }
+    seg(s.slice(1)).forEach(r => out.push([s[0], ...r]));
+    return out;
+  };
+  const opciones = [];
+  toks.forEach(tok => {
+    if (W[tok]) opciones.push([[W[tok]]]);
+    else if (/^\d+$/.test(tok) && tok.length <= 8) opciones.push(seg(tok.replace(/^0+(?=\d)/, '')).slice(0, 40));
+  });
+  const fix = arr => arr.map(v => (v === '0' ? 'X' : v));
+  // Buscar una combinación que dé justo n números
+  let found = null;
+  const buscar = (i, acc) => {
+    if (found) return;
+    if (acc.length > n) return;
+    if (i === opciones.length) { if (acc.length === n) found = acc; return; }
+    for (const o of opciones[i]) { buscar(i + 1, acc.concat(o)); if (found) return; }
+  };
+  if (n > 0) buscar(0, []);
+  if (found) return fix(found);
+  return fix(opciones.flatMap(o => o[0]));
+}
+
+function vozProcesar(alts) {
+  const n = players.length - _voz.j;
+  let nums = null;
+  for (const a of alts) { const r = vozParse(a, n); if (r.length === n) { nums = r; break; } }
+  if (!nums) {
+    for (const a of alts) { const r = vozParse(a, n); if (r.length) { nums = r.slice(0, n); break; } }
+  }
+  if (!nums || !nums.length) {
+    vozMsg(`No entendí «${alts[0] || ''}». Tocá 🎤 para repetir.`);
+    return;
+  }
+  nums.forEach((v, i) => {
+    const el = document.getElementById(`g${_voz.j + i}_${_voz.h}`);
+    if (!el) return;
+    el.value = v;
+    el.dispatchEvent(new Event('input'));
+  });
+  document.getElementById('voz-heard').textContent = nums.join(' · ');
+  vozMsg(nums.length < n ? 'Cargado. Faltan scores: completalos con el teclado.' : '✓ Cargado');
+  const h = _voz.h, faltan = nums.length < n, sig = _voz.j + nums.length;
+  _voz.closeTimer = setTimeout(() => {
+    vozCerrar();
+    if (faltan) {
+      const el = document.getElementById(`g${sig}_${h}`);
+      if (el) { _voz.skipFocus = true; el.focus(); }
+    }
+  }, 1100);
+}
+
+function vozCerrar() {
+  clearTimeout(_voz.closeTimer);
+  const rec = _voz.rec; _voz.rec = null;
+  try { if (rec) rec.abort(); } catch(e) {}
+  vozMicOn(false);
+  document.getElementById('modal-voz').classList.remove('open');
+}
+
+function vozTeclado() {
+  vozCerrar();
+  const el = document.getElementById(`g${_voz.j}_${_voz.h}`);
+  if (el) { _voz.skipFocus = true; el.focus(); }
 }
 
 // ════ LÍNEA DE DIFERENCIA EN LA TARJETA DE ARRIBA ════
