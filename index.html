@@ -29,7 +29,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20261107-003";
+const VERSION = "20261107-005";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -291,6 +291,7 @@ tr.r-even  td { background:#245c38; }
 tr.r-odd   td { background:#1a472a; }
 tr.r-sub   td { background:#0a2a14; color:#ffd700; font-weight:bold; }
 tr.r-total td { background:#0d3318; color:#ffd700; font-weight:bold; font-size:16px; border-top:2px solid #3d8a3d; }
+tr.r-tneto td { background:#0d3318; color:#ffffff; font-weight:bold; font-size:16px; }
 tr.r-stbl  td { background:#072b18; color:#90ee90; font-weight:bold; font-size:15px; }
 tr.r-aag   td { background:#072b18; color:#87ceeb; font-weight:bold; font-size:15px; }
 tr.r-diff  td { background:#051a0e; color:#ffd700; font-weight:bold; font-size:16px; border-top:2px solid #ffd700; }
@@ -1092,8 +1093,8 @@ function populateHcpTable() {
     const tr = document.createElement('tr');
     tr.innerHTML =
       `<td>Jugador ${i+1}</td>` +
-      `<td><input class="ini" type="text" id="ini${i}" maxlength="7" autocorrect="off" autocapitalize="characters"></td>` +
-      `<td><input class="hcp-in" type="number" id="hcp${i}" placeholder="0" min="0" max="54" inputmode="numeric"></td>`;
+      `<td><input class="ini" type="text" id="ini${i}" maxlength="7" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"></td>` +
+      `<td><input class="hcp-in" type="number" id="hcp${i}" placeholder="0" min="0" max="54" inputmode="numeric" autocomplete="off"></td>`;
     tbody.appendChild(tr);
   }
   populateHcpTable();
@@ -1496,6 +1497,7 @@ function buildScorecard() {
   for (let h=9; h<18; h++) addHole(h);
   addSubRow('Vuelta', 'r-sub', course.slice(9).reduce((s,[p])=>s+p,0),  j=>`b9_${j}`);
   addSubRow('TOTAL',  'r-total', course.reduce((s,[p])=>s+p,0),          j=>`tot_${j}`);
+  addSubRow('TOTAL NETO', 'r-tneto', '', j=>`tnet_${j}`);   // score menos HCP al 100% (hoyos jugados)
   addResultRow('STABLEFORD','r-stbl', j=>`stbl_${j}`);
   addResultRow('AAG',       'r-aag',  j=>`aag_${j}`);
   setupStickyHeader();
@@ -1519,7 +1521,7 @@ function scoreColor(pts, isPickup, netOverPar) {
 
 function recalcAll() {
   players.forEach((p, j) => {
-    let f9g=0, b9g=0, totPts=0, totAAG=0;
+    let f9g=0, b9g=0, totPts=0, totAAG=0, totNet=0;
     let f9ok=false, b9ok=false, f9pickup=false, b9pickup=false;
     for (let h=0; h<18; h++) {
       const el = document.getElementById(`g${j}_${h}`);
@@ -1544,6 +1546,7 @@ function recalcAll() {
         const [bg,fg] = scoreColor(pts, false, g - par - stk);
         if (el) { el.style.background=bg; el.style.color=fg; }
         if (h<9) { f9g+=g; f9ok=true; } else { b9g+=g; b9ok=true; }
+        totNet += g - stk;   // neto con HCP al 100%
       }
       totPts += pts; totAAG += holeAAG;
     }
@@ -1553,6 +1556,9 @@ function recalcAll() {
     set(`f9_${j}`,   !f9ok ? '—' : f9pickup ? (f9g > 0 ? f9g + '*' : 'X') : f9g);
     set(`b9_${j}`,   !b9ok ? '—' : b9pickup ? (b9g > 0 ? b9g + '*' : 'X') : b9g);
     set(`tot_${j}`,  !any  ? '—' : (f9pickup||b9pickup) ? ((f9g+b9g) > 0 ? (f9g+b9g) + '*' : 'X') : f9g+b9g);
+    // TOTAL NETO: score de los hoyos jugados menos los golpes que recibió en ellos (HCP 100%).
+    // Con los 18 hoyos da Total − HCP. Si levantó algún hoyo, lleva '*' igual que TOTAL.
+    set(`tnet_${j}`, !any  ? '—' : (f9pickup||b9pickup) ? ((f9g+b9g) > 0 ? totNet + '*' : 'X') : totNet);
     set(`stbl_${j}`, any   ? totPts : '—');
     set(`aag_${j}`,  any   ? totAAG : '—');
   });
