@@ -29,7 +29,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20261107-001";
+const VERSION = "20261107-002";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -321,6 +321,10 @@ td.fc-0 { color:#aaa !important; }
 /* v2026-10-03: scores enteros + 4-2-0 acumulado ida/vuelta/match */
 tr.r-acc td { background:#0a2414; color:#ffd700; font-size:17px; font-weight:bold; padding:4px 2px; border-bottom:1px solid #3d8a3d; }
 tr.r-acc td.acc-0 { color:#5f8f6a; font-weight:normal; }
+/* Línea de diferencia en la tarjeta de arriba (debajo del último hoyo cargado) */
+tr.r-scacc td { background:#3a2e00; border-top:1px solid #ffd700; border-bottom:2px solid #ffd700; }
+tr.r-scacc td.lbl { font-size:12px; color:#ffd700; padding-left:6px; }
+tr.r-scacc td.acc-0 { color:#c8b060; font-size:14px; }
 tr.r-neto td { background:#0a2a14; color:#ffd700; font-weight:bold; border-top:2px solid #ffd700; border-bottom:2px solid #ffd700; }
 tr.r-neto td.acc-0 { color:#5f8f6a; }
 tr.r-nsum td { background:#0a2414; color:#a8d8a8; font-size:13px; font-weight:bold; padding:3px 2px; }
@@ -1415,6 +1419,11 @@ function buildScorecard() {
         if (otro) { this.value = 'X'; this.dataset.prev = 'X'; recalcAll(); }
       });
     });
+    // Línea intercalada con la diferencia acumulada (fourball, match, 4-2-0).
+    // Solo se ve debajo del último hoyo cargado; la llena scAccShow.
+    const tra = document.createElement('tr');
+    tra.className = 'r-acc r-scacc'; tra.id = `scacc_${h}`; tra.style.display = 'none';
+    tbody.appendChild(tra);
   }
   function addSubRow(label, css, parSum, mkId) {
     const tr = document.createElement('tr'); tr.className = css;
@@ -1506,6 +1515,34 @@ function set(id, val) {
   const el = document.getElementById(id); if (el) el.textContent = val;
 }
 
+// ════ LÍNEA DE DIFERENCIA EN LA TARJETA DE ARRIBA ════
+// Muestra, debajo del último hoyo cargado, la misma diferencia acumulada que
+// la tabla de abajo, para no tener que bajar la pantalla en cada hoyo.
+// h = hoyo (0..17) o null para ocultarla. cells = [{text, span, cls}].
+function scAccShow(h, cells) {
+  for (let k = 0; k < 18; k++) {
+    const tr = document.getElementById(`scacc_${k}`);
+    if (tr && k !== h) tr.style.display = 'none';
+  }
+  if (h === null || h === undefined || !cells) return;
+  const tr = document.getElementById(`scacc_${h}`);
+  if (!tr) return;
+  let html = `<td class="lbl" colspan="3">${h < 9 ? 'Dif. Ida' : 'Dif. Vuelta'}</td>`;
+  cells.forEach(c => html += `<td class="c-player ${c.cls || ''}" colspan="${c.span || 1}">${c.text}</td>`);
+  tr.innerHTML = html;
+  tr.style.display = '';
+}
+
+// Celdas para dos bandos (equipos del fourball o jugadores del match).
+// spans = cuántas columnas de jugador ocupa cada bando.
+function scAccCells2(acc, spans) {
+  if (acc[0] === acc[1]) return [{ text: 'EMPATE', span: spans[0] + spans[1], cls: 'acc-0' }];
+  const d = Math.abs(acc[0] - acc[1]), gana = acc[0] > acc[1] ? 0 : 1;
+  return [0, 1].map(i => i === gana
+    ? { text: `+${d}`, span: spans[i] }
+    : { text: '—', span: spans[i], cls: 'acc-0' });
+}
+
 // ════ A LA 1° Y 2° MEJORES (4 jugadores) ════
 
 function buildTeamSection() {
@@ -1567,10 +1604,8 @@ function buildTeamSection() {
   addTeamRow('Neto Vuelta', 'ta_nb9','tb_nb9','r-nsum');
   addTeamRow('TOTAL',  'ta_tot','tb_tot','r-total');
   addTeamRow('Neto Total',  'ta_ntot','tb_ntot','r-nsum');
-  // Tres resultados, igual que el 4-2-0: Ida, Vuelta y Match (ida + vuelta)
-  addTeamRow('Dif. Ida',    'ta_dF', 'tb_dF', 'r-diff');
-  addTeamRow('Dif. Vuelta', 'ta_dB', 'tb_dB', 'r-sub');
-  addTeamRow('Dif. Match',  'ta_dif','tb_dif','r-sub');
+  // Ida y Vuelta ya muestran su diferencia; acá queda el resultado del Match (ida + vuelta)
+  addTeamRow('Dif. Match',  'ta_dif','tb_dif','r-diff');
 }
 
 function calcHoleTeam(h) {
@@ -1609,12 +1644,14 @@ function applyTeam(td, p) {
 function recalcTeam() {
   let f9A=0,f9B=0,b9A=0,b9B=0,f9ok=false,b9ok=false;
   const acc=[0,0];
+  let last = null;   // último hoyo cargado, para la línea de la tarjeta de arriba
   for (let h=0; h<18; h++) {
     if (h===9) acc.fill(0);   // la vuelta acumula independiente de la ida (igual que el 4-2-0)
     const pts = calcHoleTeam(h);
     const trAcc = document.getElementById(`tacc_${h}`);
     if (pts) {
       acc[0]+=pts[0]; acc[1]+=pts[1];
+      last = { h, acc: acc.slice() };
       const mn = Math.min(acc[0], acc[1]);
       ['taa_','tba_'].forEach((k,t) => {
         const ta = document.getElementById(k+h);
@@ -1633,9 +1670,9 @@ function recalcTeam() {
     if (h<9) { f9A+=pts[0]; f9B+=pts[1]; f9ok=true; }
     else     { b9A+=pts[0]; b9B+=pts[1]; b9ok=true; }
   }
+  // Tarjeta de arriba: Equipo A = jugadores 1 y 2, Equipo B = jugadores 3 y 4
+  scAccShow(last ? last.h : null, last ? scAccCells2(last.acc, [2, 2]) : null);
   const setTd=(id,val)=>{const el=document.getElementById(id);if(el){el.textContent=val;el.className='c-team';}};
-  setTd('ta_f9',f9ok?f9A:'—'); setTd('tb_f9',f9ok?f9B:'—');
-  setTd('ta_b9',b9ok?b9A:'—'); setTd('tb_b9',b9ok?b9B:'—');
   const any=f9ok||b9ok, totA=f9A+b9A, totB=f9B+b9B;
   setTd('ta_tot',any?totA:'—'); setTd('tb_tot',any?totB:'—');
   const pintaDif = (idA, idB, a, b, ok) => {
@@ -1650,8 +1687,9 @@ function recalcTeam() {
       dA.textContent='—'; dB.textContent=`+${b-a}`; dB.className+=' tc-2';
     }
   };
-  pintaDif('ta_dF', 'tb_dF',  f9A,  f9B,  f9ok);
-  pintaDif('ta_dB', 'tb_dB',  b9A,  b9B,  b9ok);
+  // Filas Ida y Vuelta: diferencia acumulada (no los puntos de cada equipo)
+  pintaDif('ta_f9', 'tb_f9',  f9A,  f9B,  f9ok);
+  pintaDif('ta_b9', 'tb_b9',  b9A,  b9B,  b9ok);
   pintaDif('ta_dif','tb_dif', totA, totB, any);
   // Neto acumulado de cada jugador (Ida / Vuelta / Total).
   // Formato por equipo: "neto 1° jugador · neto 2° jugador".
@@ -1834,12 +1872,14 @@ function recalcMatch() {
   const f9=[0,0], b9=[0,0];
   let f9ok=false, b9ok=false;
   const acc=[0,0];
+  let last = null;   // último hoyo cargado, para la línea de la tarjeta de arriba
   for (let h=0; h<18; h++) {
     if (h===9) acc.fill(0);   // la vuelta acumula independiente de la ida (igual que fourball y 4-2-0)
     const pts = calcHoleMatch(h);
     const trAcc = document.getElementById(`pmacc_${h}`);
     if (pts) {
       acc[0]+=pts[0]; acc[1]+=pts[1];
+      last = { h, acc: acc.slice() };
       const mn = Math.min(acc[0], acc[1]);
       for (let j=0; j<2; j++) {
         const ta = document.getElementById(`pma_${j}_${h}`);
@@ -1865,6 +1905,7 @@ function recalcMatch() {
       else     { b9[0]+=pts[0]; b9[1]+=pts[1]; b9ok=true; }
     }
   }
+  scAccShow(last ? last.h : null, last ? scAccCells2(last.acc, [1, 1]) : null);
   const tot = f9.map((v,j)=>v+b9[j]);
   const setM=(id,val)=>{ const el=document.getElementById(id); if(el){el.textContent=val;el.className='c-match';} };
   players.forEach((_,j)=>{
@@ -2243,12 +2284,14 @@ function recalc420() {
   const f9=[0,0,0], b9=[0,0,0];
   const acc=[0,0,0];
   let f9ok=false, b9ok=false;
+  let last = null;   // último hoyo cargado, para la línea de la tarjeta de arriba
   for (let h=0; h<18; h++) {
     if (h===9) acc.fill(0);   // la vuelta acumula independiente de la ida
     const pts = calcHole420(h);
     const trAcc = document.getElementById(`p4acc_${h}`);
     if (pts) {
       pts.forEach((p,j)=>acc[j]+=p);
+      last = { h, acc: acc.slice() };
       const mn = Math.min(...acc);
       for (let j=0; j<3; j++) {
         const ta = document.getElementById(`p4a_${j}_${h}`);
@@ -2277,6 +2320,13 @@ function recalc420() {
       else     { pts.forEach((p,j)=>b9[j]+=p); b9ok=true; }
     }
   }
+  // Tarjeta de arriba: diferencia de cada uno contra el último (igual que la tabla de abajo)
+  if (last) {
+    const mn = Math.min(...last.acc);
+    scAccShow(last.h, last.acc.map(v => v - mn === 0
+      ? { text: '—', cls: 'acc-0' }
+      : { text: String(v - mn) }));
+  } else scAccShow(null);
   const tot = f9.map((v,j)=>v+b9[j]);
   const setP4=(id,val)=>{ const el=document.getElementById(id); if(el){el.textContent=val;el.className='c-p420';} };
   players.forEach((_,j)=>{
