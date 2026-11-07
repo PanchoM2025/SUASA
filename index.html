@@ -29,7 +29,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20261107-005";
+const VERSION = "20261107-006";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -1494,6 +1494,10 @@ function buildScorecard() {
   }
   for (let h=0; h<9; h++) addHole(h);
   addSubRow('Ida',    'r-sub', course.slice(0,9).reduce((s,[p])=>s+p,0), j=>`f9_${j}`);
+  // Línea dorada fija con el resultado de la ida (la llena scAccShow)
+  const trIdaAcc = document.createElement('tr');
+  trIdaAcc.className = 'r-acc r-scacc'; trIdaAcc.id = 'scacc_ida'; trIdaAcc.style.display = 'none';
+  tbody.appendChild(trIdaAcc);
   for (let h=9; h<18; h++) addHole(h);
   addSubRow('Vuelta', 'r-sub', course.slice(9).reduce((s,[p])=>s+p,0),  j=>`b9_${j}`);
   addSubRow('TOTAL',  'r-total', course.reduce((s,[p])=>s+p,0),          j=>`tot_${j}`);
@@ -1764,18 +1768,32 @@ function vozTeclado() {
 // Muestra, debajo del último hoyo cargado, la misma diferencia acumulada que
 // la tabla de abajo, para no tener que bajar la pantalla en cada hoyo.
 // h = hoyo (0..17) o null para ocultarla. cells = [{text, span, cls}].
-function scAccShow(h, cells) {
+// last = último hoyo cargado {h, acc}; lastIda = último hoyo cargado de la ida.
+// cellsFn(acc) arma las celdas [{text, span, cls}].
+// La línea que baja no se pone en el hoyo 9: ahí terminó la ida y su resultado
+// queda fijo debajo de la fila "Ida" (también durante toda la vuelta).
+function scAccFill(tr, label, cells) {
+  let html = `<td class="lbl" colspan="3">${label}</td>`;
+  cells.forEach(c => html += `<td class="c-player ${c.cls || ''}" colspan="${c.span || 1}">${c.text}</td>`);
+  tr.innerHTML = html;
+  tr.style.display = '';
+}
+
+function scAccShow(last, lastIda, cellsFn) {
+  const h = last && last.h !== 8 ? last.h : null;
   for (let k = 0; k < 18; k++) {
     const tr = document.getElementById(`scacc_${k}`);
     if (tr && k !== h) tr.style.display = 'none';
   }
-  if (h === null || h === undefined || !cells) return;
-  const tr = document.getElementById(`scacc_${h}`);
-  if (!tr) return;
-  let html = `<td class="lbl" colspan="3">${h < 9 ? 'Dif. Ida' : 'Dif. Vuelta'}</td>`;
-  cells.forEach(c => html += `<td class="c-player ${c.cls || ''}" colspan="${c.span || 1}">${c.text}</td>`);
-  tr.innerHTML = html;
-  tr.style.display = '';
+  if (h !== null) {
+    const tr = document.getElementById(`scacc_${h}`);
+    if (tr) scAccFill(tr, h < 9 ? 'Dif. Ida' : 'Dif. Vuelta', cellsFn(last.acc));
+  }
+  const trIda = document.getElementById('scacc_ida');
+  if (trIda) {
+    if (last && last.h >= 8 && lastIda) scAccFill(trIda, 'Dif. Ida', cellsFn(lastIda.acc));
+    else trIda.style.display = 'none';
+  }
 }
 
 // Celdas para dos bandos (equipos del fourball o jugadores del match).
@@ -1889,7 +1907,7 @@ function applyTeam(td, p) {
 function recalcTeam() {
   let f9A=0,f9B=0,b9A=0,b9B=0,f9ok=false,b9ok=false;
   const acc=[0,0];
-  let last = null;   // último hoyo cargado, para la línea de la tarjeta de arriba
+  let last = null, lastIda = null;   // último hoyo cargado (y de la ida), para la línea de la tarjeta de arriba
   for (let h=0; h<18; h++) {
     if (h===9) acc.fill(0);   // la vuelta acumula independiente de la ida (igual que el 4-2-0)
     const pts = calcHoleTeam(h);
@@ -1897,6 +1915,7 @@ function recalcTeam() {
     if (pts) {
       acc[0]+=pts[0]; acc[1]+=pts[1];
       last = { h, acc: acc.slice() };
+      if (h < 9) lastIda = last;
       const mn = Math.min(acc[0], acc[1]);
       ['taa_','tba_'].forEach((k,t) => {
         const ta = document.getElementById(k+h);
@@ -1916,7 +1935,7 @@ function recalcTeam() {
     else     { b9A+=pts[0]; b9B+=pts[1]; b9ok=true; }
   }
   // Tarjeta de arriba: Equipo A = jugadores 1 y 2, Equipo B = jugadores 3 y 4
-  scAccShow(last ? last.h : null, last ? scAccCells2(last.acc, [2, 2]) : null);
+  scAccShow(last, lastIda, acc => scAccCells2(acc, [2, 2]));
   const setTd=(id,val)=>{const el=document.getElementById(id);if(el){el.textContent=val;el.className='c-team';}};
   const any=f9ok||b9ok, totA=f9A+b9A, totB=f9B+b9B;
   setTd('ta_tot',any?totA:'—'); setTd('tb_tot',any?totB:'—');
@@ -2117,7 +2136,7 @@ function recalcMatch() {
   const f9=[0,0], b9=[0,0];
   let f9ok=false, b9ok=false;
   const acc=[0,0];
-  let last = null;   // último hoyo cargado, para la línea de la tarjeta de arriba
+  let last = null, lastIda = null;   // último hoyo cargado (y de la ida), para la línea de la tarjeta de arriba
   for (let h=0; h<18; h++) {
     if (h===9) acc.fill(0);   // la vuelta acumula independiente de la ida (igual que fourball y 4-2-0)
     const pts = calcHoleMatch(h);
@@ -2125,6 +2144,7 @@ function recalcMatch() {
     if (pts) {
       acc[0]+=pts[0]; acc[1]+=pts[1];
       last = { h, acc: acc.slice() };
+      if (h < 9) lastIda = last;
       const mn = Math.min(acc[0], acc[1]);
       for (let j=0; j<2; j++) {
         const ta = document.getElementById(`pma_${j}_${h}`);
@@ -2150,7 +2170,7 @@ function recalcMatch() {
       else     { b9[0]+=pts[0]; b9[1]+=pts[1]; b9ok=true; }
     }
   }
-  scAccShow(last ? last.h : null, last ? scAccCells2(last.acc, [1, 1]) : null);
+  scAccShow(last, lastIda, acc => scAccCells2(acc, [1, 1]));
   const tot = f9.map((v,j)=>v+b9[j]);
   const setM=(id,val)=>{ const el=document.getElementById(id); if(el){el.textContent=val;el.className='c-match';} };
   players.forEach((_,j)=>{
@@ -2529,7 +2549,7 @@ function recalc420() {
   const f9=[0,0,0], b9=[0,0,0];
   const acc=[0,0,0];
   let f9ok=false, b9ok=false;
-  let last = null;   // último hoyo cargado, para la línea de la tarjeta de arriba
+  let last = null, lastIda = null;   // último hoyo cargado (y de la ida), para la línea de la tarjeta de arriba
   for (let h=0; h<18; h++) {
     if (h===9) acc.fill(0);   // la vuelta acumula independiente de la ida
     const pts = calcHole420(h);
@@ -2537,6 +2557,7 @@ function recalc420() {
     if (pts) {
       pts.forEach((p,j)=>acc[j]+=p);
       last = { h, acc: acc.slice() };
+      if (h < 9) lastIda = last;
       const mn = Math.min(...acc);
       for (let j=0; j<3; j++) {
         const ta = document.getElementById(`p4a_${j}_${h}`);
@@ -2566,12 +2587,10 @@ function recalc420() {
     }
   }
   // Tarjeta de arriba: diferencia de cada uno contra el último (igual que la tabla de abajo)
-  if (last) {
-    const mn = Math.min(...last.acc);
-    scAccShow(last.h, last.acc.map(v => v - mn === 0
-      ? { text: '—', cls: 'acc-0' }
-      : { text: String(v - mn) }));
-  } else scAccShow(null);
+  scAccShow(last, lastIda, acc => {
+    const mn = Math.min(...acc);
+    return acc.map(v => v - mn === 0 ? { text: '—', cls: 'acc-0' } : { text: String(v - mn) });
+  });
   const tot = f9.map((v,j)=>v+b9[j]);
   const setP4=(id,val)=>{ const el=document.getElementById(id); if(el){el.textContent=val;el.className='c-p420';} };
   players.forEach((_,j)=>{
