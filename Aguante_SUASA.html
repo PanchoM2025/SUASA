@@ -29,7 +29,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20261114-001";
+const VERSION = "20261118-003";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -58,9 +58,20 @@ function gaClientId() {
   return id;
 }
 
+// Número de sesión (uno por cada vez que se abre la app): Analytics lo necesita
+// para contar usuarios activos y mostrar los eventos en "Tiempo real".
+function gaSessionId() {
+  try {
+    let id = sessionStorage.getItem('ga_session_suasa');
+    if (!id) { id = String(Math.floor(Date.now() / 1000)); sessionStorage.setItem('ga_session_suasa', id); }
+    return id;
+  } catch(e) { return String(Math.floor(Date.now() / 1000)); }
+}
+
 function gaEnqueue(eventName, params) {
   const queue = JSON.parse(localStorage.getItem(GA_QUEUE_KEY) || '[]');
-  queue.push({ name: eventName, params: Object.assign({ timestamp_micros: Date.now() * 1000 }, params) });
+  queue.push({ name: eventName, timestamp_micros: Date.now() * 1000,
+    params: Object.assign({ session_id: gaSessionId(), engagement_time_msec: 100 }, params) });
   localStorage.setItem(GA_QUEUE_KEY, JSON.stringify(queue));
 }
 
@@ -1309,11 +1320,26 @@ function selectHcpMode(mode) {
   finishStartGame();
 }
 
+// Estadística: aviso de partida nueva (cancha, modalidad, cantidad de jugadores).
+// No manda iniciales ni HCP. Sin señal queda en cola y sale cuando vuelve.
+function gaPartida() {
+  try {
+    const n = players.length;
+    const modalidad = n === 1 ? 'Stableford' : n === 2 ? 'Match' : n === 3 ? '4-2-0'
+      : (gameMode === 'mejor' ? 'Fourball a la mejor' : 'Fourball 1a y 2a');
+    const hcp = n === 1 ? '85%' : (hcpMode === 'cero' ? 'Bajar a cero' : 'HCP completo');
+    gaEnqueue('partida_inicio', { app: 'SUASA', cancha: String(_tmpCourseName).slice(0, 100),
+      modalidad, hcp_modo: hcp, jugadores: n });
+    gaFlush();
+  } catch(e) {}
+}
+
 function finishStartGame() {
   if (_pendingScores === null) {
     // Partida nueva: la que estaba guardada pasa a "anterior" (se puede recuperar)
     backupCurrent();
     _gameId = newGameId();
+    gaPartida();
   }
   _noSave = false;
   if (players.length === 1) hcpMode = 'completo';   // 1 jugador: siempre 85%, nunca "bajar a cero"
@@ -1761,13 +1787,15 @@ function vozStart() {
   rec.maxAlternatives = 5;
   rec.continuous = false;
   let terminado = false;
+  const interinos = [];   // lo que se fue mostrando mientras se hablaba
   rec.onresult = ev => {
     if (_voz.rec !== rec) return;
     const res = ev.results[ev.results.length - 1];
     const alts = [];
     for (let i = 0; i < res.length; i++) alts.push(res[i].transcript);
     document.getElementById('voz-heard').textContent = alts[0] || '';
-    if (res.isFinal) { terminado = true; vozProcesar(alts); }
+    if (res.isFinal) { terminado = true; vozProcesar(alts, interinos); }
+    else alts.forEach(a => { if (a && !interinos.includes(a)) interinos.push(a); });
   };
   rec.onerror = ev => {
     if (_voz.rec !== rec) return;
@@ -1804,10 +1832,10 @@ function vozStart() {
 // n = cuántas casillas hay para llenar: si el teléfono junta los números
 // ("463"), se separan de forma que alcancen justo para esas casillas.
 function vozParse(texto, n) {
-  const W = { cero:'0', un:'1', uno:'1', una:'1', dos:'2', tres:'3', cuatro:'4', cinco:'5',
+  const W = { cero:'0', sero:'0', zero:'0', xero:'0', cerro:'0', o:'0', oh:'0', un:'1', uno:'1', una:'1', dos:'2', tres:'3', cuatro:'4', cinco:'5',
     seis:'6', siete:'7', ocho:'8', nueve:'9', diez:'10', once:'11', doce:'12', trece:'13',
-    catorce:'14', quince:'15', x:'X', equis:'X', levanto:'X', levante:'X', levantado:'X', levantada:'X' };
-  const t = String(texto || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    catorce:'14', quince:'15', x:'X', equis:'X', ekis:'X', equi:'X', equix:'X', kis:'X', por:'X', levanto:'X', levante:'X', levantado:'X', levantada:'X' };
+  const t = String(texto || '').toLowerCase().replace(/[×✕✖*]/g, ' x ').normalize('NFD').replace(/[̀-ͯ]/g, '')
     .replace(/(\d)([a-z])/g, '$1 $2').replace(/([a-z])(\d)/g, '$1 $2');
   const toks = t.replace(/[,.;:\-\/·]+/g, ' ').split(/\s+/).filter(Boolean);
   // Cada token da una o varias formas de leerse (la primera es la preferida)
@@ -1824,7 +1852,7 @@ function vozParse(texto, n) {
   const opciones = [];
   toks.forEach(tok => {
     if (W[tok]) opciones.push([[W[tok]]]);
-    else if (/^\d+$/.test(tok) && tok.length <= 8) opciones.push(seg(tok.replace(/^0+(?=\d)/, '')).slice(0, 40));
+    else if (/^\d+$/.test(tok) && tok.length <= 8) opciones.push(seg(tok).slice(0, 40));
   });
   const fix = arr => arr.map(v => (v === '0' ? 'X' : v));
   // Buscar una combinación que dé justo n números
@@ -1840,10 +1868,14 @@ function vozParse(texto, n) {
   return fix(opciones.flatMap(o => o[0]));
 }
 
-function vozProcesar(alts) {
+function vozProcesar(alts, interinos) {
   const n = players.length - _voz.j;
+  // El teléfono a veces "corrige" el texto final y se come el cero o la X
+  // ("2 0 3 4" en pantalla → final "2 3 4"). Si ninguna versión final da justo
+  // n scores, se usa lo último que se mostró mientras se hablaba.
+  const inter = (interinos || []).slice().reverse();
   let nums = null;
-  for (const a of alts) { const r = vozParse(a, n); if (r.length === n) { nums = r; break; } }
+  for (const a of alts.concat(inter)) { const r = vozParse(a, n); if (r.length === n) { nums = r; break; } }
   if (!nums) {
     for (const a of alts) { const r = vozParse(a, n); if (r.length) { nums = r.slice(0, n); break; } }
   }
