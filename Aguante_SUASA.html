@@ -29,7 +29,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20261119-002";
+const VERSION = "20261119-003";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -68,10 +68,26 @@ function gaSessionId() {
   } catch(e) { return String(Math.floor(Date.now() / 1000)); }
 }
 
+// ¿Se abrió desde el ícono de inicio (app instalada) o desde el navegador?
+function gaInstalada() {
+  try {
+    return (window.matchMedia && matchMedia('(display-mode: standalone)').matches)
+      || window.navigator.standalone === true ? 'si' : 'no';
+  } catch(e) { return 'no'; }
+}
+
+// Pedirle al teléfono que no borre los datos de la app (número del celular,
+// partida guardada). No muestra ningún cartel; si no lo acepta, sigue igual.
+try {
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persisted().then(p => { if (!p) navigator.storage.persist().catch(() => {}); }).catch(() => {});
+  }
+} catch(e) {}
+
 function gaEnqueue(eventName, params) {
   const queue = JSON.parse(localStorage.getItem(GA_QUEUE_KEY) || '[]');
   queue.push({ name: eventName, timestamp_micros: Date.now() * 1000,
-    params: Object.assign({ session_id: gaSessionId(), engagement_time_msec: 100 }, params) });
+    params: Object.assign({ session_id: gaSessionId(), engagement_time_msec: 100, instalada: gaInstalada() }, params) });
   localStorage.setItem(GA_QUEUE_KEY, JSON.stringify(queue));
 }
 
