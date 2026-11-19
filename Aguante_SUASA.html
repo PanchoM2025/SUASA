@@ -29,7 +29,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20261119-001";
+const VERSION = "20261119-002";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -1879,7 +1879,10 @@ function vozProcesar(alts, interinos) {
   let nums = null;
   for (const a of alts.concat(inter)) { const r = vozParse(a, n); if (r.length === n) { nums = r; break; } }
   if (!nums) {
-    for (const a of alts) { const r = vozParse(a, n); if (r.length) { nums = r.slice(0, n); break; } }
+    // Ninguna da justo n: usar la que trae más scores (final o intermedia)
+    let best = [];
+    for (const a of alts.concat(inter)) { const r = vozParse(a, n); if (r.length > best.length) best = r; }
+    if (best.length) nums = best.slice(0, n);
   }
   if (!nums || !nums.length) {
     vozMsg(`No entendí «${alts[0] || ''}». Tocá 🎤 para repetir.`);
