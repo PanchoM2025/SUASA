@@ -29,7 +29,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20261118-003";
+const VERSION = "20261118-004";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -1834,7 +1834,7 @@ function vozStart() {
 function vozParse(texto, n) {
   const W = { cero:'0', sero:'0', zero:'0', xero:'0', cerro:'0', o:'0', oh:'0', un:'1', uno:'1', una:'1', dos:'2', tres:'3', cuatro:'4', cinco:'5',
     seis:'6', siete:'7', ocho:'8', nueve:'9', diez:'10', once:'11', doce:'12', trece:'13',
-    catorce:'14', quince:'15', x:'X', equis:'X', ekis:'X', equi:'X', equix:'X', kis:'X', por:'X', levanto:'X', levante:'X', levantado:'X', levantada:'X' };
+    catorce:'14', quince:'15', x:'X', equis:'X', ekis:'X', equi:'X', equix:'X', kis:'X', por:'X', ex:'X', eks:'X', equiz:'X', ekiz:'X', esquis:'X', quis:'X', kiss:'X', cruz:'X', paso:'X', pase:'X', levanto:'X', levante:'X', levantado:'X', levantada:'X' };
   const t = String(texto || '').toLowerCase().replace(/[×✕✖*]/g, ' x ').normalize('NFD').replace(/[̀-ͯ]/g, '')
     .replace(/(\d)([a-z])/g, '$1 $2').replace(/([a-z])(\d)/g, '$1 $2');
   const toks = t.replace(/[,.;:\-\/·]+/g, ' ').split(/\s+/).filter(Boolean);
@@ -1890,7 +1890,9 @@ function vozProcesar(alts, interinos) {
     el.dispatchEvent(new Event('input'));
   });
   document.getElementById('voz-heard').textContent = nums.join(' · ');
-  vozMsg(nums.length < n ? 'Cargado. Faltan scores: completalos con el teclado.' : '✓ Cargado');
+  // Se muestra lo que entendió el teléfono, para ver cómo escribe la X
+  const oido = `(oí: «${alts[0] || ''}»)`;
+  vozMsg((nums.length < n ? 'Cargado. Faltan scores: completalos con el teclado. ' : '✓ Cargado ') + oido);
   const h = _voz.h, faltan = nums.length < n, sig = _voz.j + nums.length;
   _voz.closeTimer = setTimeout(() => {
     vozCerrar();
@@ -1898,7 +1900,7 @@ function vozProcesar(alts, interinos) {
       const el = document.getElementById(`g${sig}_${h}`);
       if (el) { _voz.skipFocus = true; el.focus(); }
     }
-  }, 1100);
+  }, faltan ? 3000 : 1800);
 }
 
 function vozCerrar() {
