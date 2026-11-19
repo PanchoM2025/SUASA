@@ -29,7 +29,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── VERSION — cambiar este número antes de cada deploy ──────────────────────
-const VERSION = "20261118-004";
+const VERSION = "20261119-001";
 (function() {
   fetch(location.pathname + '?_nc=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -1837,7 +1837,9 @@ function vozParse(texto, n) {
     catorce:'14', quince:'15', x:'X', equis:'X', ekis:'X', equi:'X', equix:'X', kis:'X', por:'X', ex:'X', eks:'X', equiz:'X', ekiz:'X', esquis:'X', quis:'X', kiss:'X', cruz:'X', paso:'X', pase:'X', levanto:'X', levante:'X', levantado:'X', levantada:'X' };
   const t = String(texto || '').toLowerCase().replace(/[×✕✖*]/g, ' x ').normalize('NFD').replace(/[̀-ͯ]/g, '')
     .replace(/(\d)([a-z])/g, '$1 $2').replace(/([a-z])(\d)/g, '$1 $2');
-  const toks = t.replace(/[,.;:\-\/·]+/g, ' ').split(/\s+/).filter(Boolean);
+  // "XX", "x4x" → se separan las X pegadas entre sí o a números
+  const toks = t.replace(/[,.;:\-\/·]+/g, ' ').split(/\s+/).filter(Boolean)
+    .flatMap(tk => /^[x\d]+$/.test(tk) && tk.includes('x') ? tk.match(/x|\d+/g) : [tk]);
   // Cada token da una o varias formas de leerse (la primera es la preferida)
   const seg = s => {
     if (s === '') return [[]];
